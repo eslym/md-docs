@@ -33,6 +33,7 @@
 				class={buttonVariants({ variant: 'ghost', size: 'icon', class: 'size-7 max-sm:ml-auto' })}
 			>
 				<ThemeIcon />
+				<span class="sr-only">Toggle theme</span>
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end">
 				<DropdownMenu.Group>

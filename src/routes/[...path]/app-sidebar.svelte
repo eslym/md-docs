@@ -90,37 +90,41 @@
 		</svelte:element>
 	{/snippet}
 	<Collapsible.Root open={false} class="group/collapsible">
-		<Sidebar.MenuItem>
-			<div class="flex flex-row gap-0.5">
+		{#snippet child({ props })}
+			<Sidebar.MenuItem {...props}>
+				<div class="flex flex-row gap-0.5">
+					{#if entry.children?.length}
+						<Collapsible.Trigger>
+							{#snippet child({ props })}
+								<Sidebar.MenuButton
+									{...props}
+									isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
+									class="h-auto py-1.5"
+									child={menu_button}
+								/>
+							{/snippet}
+						</Collapsible.Trigger>
+					{:else}
+						<Sidebar.MenuButton
+							class="h-auto py-1.5"
+							child={menu_button}
+							isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
+						/>
+					{/if}
+				</div>
 				{#if entry.children?.length}
-					<Collapsible.Trigger>
+					<Collapsible.Content>
 						{#snippet child({ props })}
-							<Sidebar.MenuButton
-								{...props}
-								isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
-								class="h-auto py-1.5"
-								child={menu_button}
-							/>
+							<Sidebar.MenuSub {...props}>
+								{#each entry.children as sub}
+									{@render sub_item(sub)}
+								{/each}
+							</Sidebar.MenuSub>
 						{/snippet}
-					</Collapsible.Trigger>
-				{:else}
-					<Sidebar.MenuButton
-						class="h-auto py-1.5"
-						child={menu_button}
-						isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
-					/>
+					</Collapsible.Content>
 				{/if}
-			</div>
-			{#if entry.children?.length}
-				<Collapsible.Content>
-					<Sidebar.MenuSub>
-						{#each entry.children as sub}
-							{@render sub_item(sub)}
-						{/each}
-					</Sidebar.MenuSub>
-				</Collapsible.Content>
-			{/if}
-		</Sidebar.MenuItem>
+			</Sidebar.MenuItem>
+		{/snippet}
 	</Collapsible.Root>
 {/snippet}
 
