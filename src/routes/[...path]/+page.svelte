@@ -1,3 +1,9 @@
+<script lang="ts" module>
+	function normalize(str: string) {
+		return str.trim().replace(/\s+/g, ' ');
+	}
+</script>
+
 <script lang="ts">
 	import { env } from '$env/dynamic/public';
 	import { MermaidContext } from '$lib/components/app/markdown/features/mermaid.svelte';
@@ -22,13 +28,15 @@
 
 	let title = $derived.by(() => {
 		if (data.meta.title) {
-			return data.meta.title;
+			return normalize(data.meta.title);
 		}
 		if (data.doc.toc[0]?.text) {
 			return data.doc.toc[0].text;
 		}
 		return 'Untitled Document';
 	});
+
+	let description = $derived(normalize(data.meta.description || ''));
 
 	let base = $derived(new URL(data.loc, page.url.origin));
 
@@ -63,17 +71,17 @@
 
 <svelte:head>
 	<title>{title}{env.PUBLIC_APP_TITLE_SUFFIX ?? ''}</title>
-	{#if data.meta.description}
-		<meta name="description" content={data.meta.description} />
-		<meta property="og:description" content={data.meta.description} />
+	{#if description}
+		<meta name="description" content={description} />
+		<meta property="og:description" content={description} />
 	{/if}
 	{#if data.meta.author}
 		{#if typeof data.meta.author === 'string'}
-			<meta name="author" content={data.meta.author} />
+			<meta name="author" content={normalize(data.meta.author)} />
 		{:else}
-			<meta name="author" content={data.meta.author.name} />
+			<meta name="author" content={normalize(data.meta.author.name)} />
 			{#if data.meta.author.url}
-				<link rel="author" href={resolve_url(data.meta.author.url, page.url)} />
+				<link rel="author" href={resolve_url(normalize(data.meta.author.url), page.url)} />
 			{/if}
 		{/if}
 	{/if}
