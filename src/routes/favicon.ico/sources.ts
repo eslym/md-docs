@@ -110,7 +110,7 @@ export function resolve_with_getter(
 		const [buff] = await src();
 		return await Sharp(buff)
 			.resize(size, size, {
-				fit: 'contain',
+				fit: 'inside',
 				background: {
 					r: 255,
 					g: 255,

@@ -47,7 +47,7 @@ export async function response_image(
 				sharp.resize({
 					width: width === 'auto' ? undefined : width,
 					height: height === 'auto' ? undefined : height,
-					fit: 'contain',
+					fit: 'inside',
 					background: {
 						r: 255,
 						g: 255,
