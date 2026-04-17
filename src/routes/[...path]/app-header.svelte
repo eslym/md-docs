@@ -24,7 +24,9 @@
 		<Separator orientation="vertical" class="mx-2 h-16!" />
 		<Breadcrumb.Root>
 			<Breadcrumb.List>
-				<Breadcrumb.Page>{title}</Breadcrumb.Page>
+				<Breadcrumb.Item>
+					<Breadcrumb.Page>{title}</Breadcrumb.Page>
+				</Breadcrumb.Item>
 			</Breadcrumb.List>
 		</Breadcrumb.Root>
 		<Separator orientation="vertical" class="mx-2 ml-auto h-16! max-sm:hidden" />
