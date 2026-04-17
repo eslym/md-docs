@@ -167,7 +167,7 @@ Production uses `@eslym/sveltekit-adapter-bun`, which supports:
 
 ## Environment variables
 
-- `DOCS_DIR` (type: `string`, default: `.svelte-kit/docs` in dev, current working directory in prod): docs directory root used by resolver.
+- `DOCS_DIR` (type: `string`, default: `./docs`): docs directory root used by resolver.
 - `TEMP_DIR` (type: `string`, default: OS temp dir + package name): temp/cache directory root.
 - `CACHE_CONTROL` (type: `string`, default: `public, max-age=${CACHE_CONTROL_MAXAGE || 0}`): explicit cache-control header.
 - `CACHE_CONTROL_MAXAGE` (type: `number` as env string, default: `0`): fallback max-age if `CACHE_CONTROL` is unset.

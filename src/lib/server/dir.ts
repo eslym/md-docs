@@ -7,5 +7,6 @@ export const tmp_path = join.bind(null, env.TEMP_DIR || join(tmpdir(), name));
 
 export const docs_path = join.bind(
 	null,
-	env.DOCS_DIR || import.meta.env.DEV ? join(process.cwd(), '.svelte-kit', 'docs') : process.cwd()
+	env.DOCS_DIR ||
+		(import.meta.env.DEV ? join(process.cwd(), '.svelte-kit', 'docs') : join(process.cwd(), 'docs'))
 );
