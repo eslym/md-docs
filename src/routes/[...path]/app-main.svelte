@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
+	import { useSidebar } from '$lib/components/ui/sidebar';
 	import { cn } from '$lib/utils';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
@@ -11,7 +11,7 @@
 		wrapperClass
 	}: { children: Snippet; class?: ClassValue; wrapperClass?: ClassValue } = $props();
 
-	const isMobile = new IsMobile();
+	const sidebar = useSidebar();
 </script>
 
 <ScrollArea
@@ -21,9 +21,10 @@
 		<div class={cn('mx-auto max-w-full', kelas)}>
 			{@render children()}
 		</div>
-		{#if !isMobile.current}
+		{#if !sidebar.isMobile}
 			<div
-				class="w-0 max-w-(--sidebar-width) grow transition-[max-width] duration-200 ease-linear group-has-[[data-slot=sidebar][data-collapsible=offcanvas]]/sidebar-wrapper:max-w-0 print:hidden"
+				data-state={sidebar.state}
+				class="w-0 max-w-(--sidebar-width) grow transition-[max-width] duration-200 ease-linear data-[state=collapsed]:max-w-0 print:hidden"
 			></div>
 		{/if}
 	</div>
