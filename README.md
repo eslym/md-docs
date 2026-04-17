@@ -181,6 +181,7 @@ Production uses `@eslym/sveltekit-adapter-bun`, which supports:
 - `PUBLIC_APP_SUBTITLE` (type: `string`, default: unset): app subtitle shown in UI.
 - `PUBLIC_APP_TITLE_SUFFIX` (type: `string`, default: empty string): suffix appended to page titles.
 - `PUBLIC_APP_FAVICON` (type: `string` URL/path, default: built-in `$lib/assets/favicon.svg`): favicon source used for both `/favicon.ico` generation and inline favicon link.
+- `PUBLIC_APP_THEME` (type: `string` URL/path, default: built-in `$lib/assets/theme.css`): theme CSS source.
 
 ## Verification
 
