@@ -30,7 +30,7 @@
 		<Separator orientation="vertical" class="mx-2 ml-auto h-16! max-sm:hidden" />
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger
-				class={buttonVariants({ variant: 'ghost', size: 'icon', class: 'size-7' })}
+				class={buttonVariants({ variant: 'ghost', size: 'icon', class: 'size-7 max-sm:ml-auto' })}
 			>
 				<ThemeIcon />
 			</DropdownMenu.Trigger>
