@@ -1,0 +1,25 @@
+.label,
+.nodeLabel,
+.edgeLabel {
+	color: var(--foreground) !important;
+	font-family: inherit;
+}
+
+.edgeLabel rect {
+	fill: var(--popover) !important;
+	stroke: var(--border) !important;
+}
+
+.node rect,
+.node circle,
+.node ellipse,
+.node polygon,
+.node path {
+	fill: var(--card) !important;
+	stroke: var(--border) !important;
+}
+
+.cluster rect {
+	fill: var(--muted) !important;
+	stroke: var(--border) !important;
+}

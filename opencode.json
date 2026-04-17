@@ -1,0 +1,19 @@
+{
+	"$schema": "https://opencode.ai/config.json",
+	"plugin": ["@sveltejs/opencode"],
+	"mcp": {
+		"shadcn-svelte": {
+			"type": "local",
+			"command": ["bunx", "mcp-remote", "https://shadcn-svelte.mastra.cloud/api/mcp/shadcn/mcp"]
+		}
+	},
+	"lsp": {
+		"tailwindcss": {
+			"command": ["bunx", "tailwindcss-language-server", "--stdio"],
+			"extensions": [".html", ".svelte", ".css"],
+			"env": {
+				"BUN_BE_BUN": "1"
+			}
+		}
+	}
+}

@@ -1,0 +1,18 @@
+diff --git a/node_modules/mermaid/.bun-tag-8b380d57a6f7c03a b/.bun-tag-8b380d57a6f7c03a
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/mermaid.core.mjs b/dist/mermaid.core.mjs
+index 0a76480239f764f17e1818ac79c1b6c93401a5dc..4d4f882867e94783cfbbc068f82d53a6fe31c993 100644
+--- a/dist/mermaid.core.mjs
++++ b/dist/mermaid.core.mjs
+@@ -1162,7 +1162,9 @@ function initialize(userOptions = {}) {
+     options.themeVariables.fontFamily = options.fontFamily;
+   }
+   saveConfigFromInitialize(options);
+-  if (options?.theme && options.theme in themes_default) {
++  if (options?.themeClass) {
++    options.themeVariables = options.themeClass;
++  } else if (options?.theme && options.theme in themes_default) {
+     options.themeVariables = themes_default[options.theme].getThemeVariables(
+       options.themeVariables
+     );

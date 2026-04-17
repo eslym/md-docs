@@ -1,0 +1,6 @@
+[install]
+# Delay installation of versions newer than 3 days (in seconds)
+minimumReleaseAge = 259200
+
+# Exclude specific trusted packages from the age gate
+minimumReleaseAgeExcludes = ["typescript", "@types/node", "@types/bun"]

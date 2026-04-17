@@ -1,0 +1,38 @@
+diff --git a/node_modules/mode-watcher/.bun-tag-3eb581f1a2632920 b/.bun-tag-3eb581f1a2632920
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/mode-watcher/.bun-tag-e3e31399e0ad9419 b/.bun-tag-e3e31399e0ad9419
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/mode.js b/dist/mode.js
+index d93639eab192160332101d074b4cbc1f10af4407..9da05ed970761c06ce5b4f35c2bf906a1cb6d6c0 100644
+--- a/dist/mode.js
++++ b/dist/mode.js
+@@ -39,7 +39,6 @@ export function setInitialMode({ defaultMode = "system", themeColors, darkClassN
+         if (darkClassNames.length)
+             rootEl.classList.add(...darkClassNames.filter(Boolean));
+     }
+-    rootEl.style.colorScheme = light ? "light" : "dark";
+     if (themeColors) {
+         const themeMetaEl = document.querySelector('meta[name="theme-color"]');
+         if (themeMetaEl) {
+diff --git a/dist/states.svelte.js b/dist/states.svelte.js
+index 2f415cfa8b3ca212bb3891d765fcdba0fc8b75f4..72b1f81b0ed98976524a6e19c18e2715455a36d7 100644
+--- a/dist/states.svelte.js
++++ b/dist/states.svelte.js
+@@ -43,7 +43,6 @@ function createDerivedMode() {
+                     htmlEl.classList.remove(...sanitizedDarkClassNames);
+                 if (sanitizedLightClassNames.length)
+                     htmlEl.classList.add(...sanitizedLightClassNames);
+-                htmlEl.style.colorScheme = "light";
+                 if (themeColorEl && themeColors.current) {
+                     themeColorEl.setAttribute("content", themeColors.current.light);
+                 }
+@@ -53,7 +52,6 @@ function createDerivedMode() {
+                     htmlEl.classList.remove(...sanitizedLightClassNames);
+                 if (sanitizedDarkClassNames.length)
+                     htmlEl.classList.add(...sanitizedDarkClassNames);
+-                htmlEl.style.colorScheme = "dark";
+                 if (themeColorEl && themeColors.current) {
+                     themeColorEl.setAttribute("content", themeColors.current.dark);
+                 }
