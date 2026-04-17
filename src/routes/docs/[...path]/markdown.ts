@@ -60,27 +60,28 @@ async function cached_ast(path: string, mtime: number) {
 		async () => {
 			const file = await cached_markdown(path, mtime);
 			const md = await file.text();
-			const meta = md.match(meta_in_md)?.[1] ?? '';
-			const parsed = meta_schema.parse(Bun.YAML.parse(meta));
+			const match = md.match(meta_in_md);
+			const meta_string = match?.[1] ?? '';
+			const meta = meta_schema.parse(Bun.YAML.parse(meta_string));
 			const opts = {
-				...parsed.markdown?.parse,
+				...meta.markdown?.parse,
 				headings:
-					parsed.markdown?.parse?.headings === true
+					meta.markdown?.parse?.headings === true
 						? {
 								ids: true
 							}
-						: parsed.markdown?.parse?.headings === false
+						: meta.markdown?.parse?.headings === false
 							? false
 							: {
 									ids: true,
-									...parsed.markdown?.parse?.headings
+									...meta.markdown?.parse?.headings
 								}
 			};
-			const doc = parse_markdown(md, opts);
-			if (parsed.markdown) {
-				delete parsed.markdown.parse;
+			const doc = parse_markdown(match ? md.slice(match[0].length) : md, opts);
+			if (meta.markdown) {
+				delete meta.markdown.parse;
 			}
-			return encode([parser_revision, `/docs${path}`, parsed, compress_mdast(doc)]);
+			return encode([parser_revision, `/docs${path}`, meta, compress_mdast(doc)]);
 		},
 		mtime
 	);
