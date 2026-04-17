@@ -112,6 +112,13 @@
 		)::after {
 		content: '';
 	}
+
+	@media print {
+		:where(pre):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+			overflow-x: none;
+			text-wrap: wrap;
+		}
+	}
 }
 
 @layer base {

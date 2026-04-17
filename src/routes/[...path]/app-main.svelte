@@ -14,14 +14,16 @@
 	const isMobile = new IsMobile();
 </script>
 
-<ScrollArea class="*:scroll-smooth @container flex h-0 grow">
+<ScrollArea
+	class="print:*:oveflow-hidden @container flex h-0 grow *:scroll-smooth print:h-auto print:*:h-auto"
+>
 	<div class={cn('flex grow flex-row', wrapperClass)}>
 		<div class={cn('mx-auto max-w-full', kelas)}>
 			{@render children()}
 		</div>
 		{#if !isMobile.current}
 			<div
-				class="w-0 max-w-(--sidebar-width) grow transition-[max-width] duration-200 ease-linear group-has-[[data-slot=sidebar][data-collapsible=offcanvas]]/sidebar-wrapper:max-w-0"
+				class="w-0 max-w-(--sidebar-width) grow transition-[max-width] duration-200 ease-linear group-has-[[data-slot=sidebar][data-collapsible=offcanvas]]/sidebar-wrapper:max-w-0 print:hidden"
 			></div>
 		{/if}
 	</div>

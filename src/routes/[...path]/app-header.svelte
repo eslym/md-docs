@@ -18,7 +18,7 @@
 	let ThemeIcon = $derived(icons[userPrefersMode.current]);
 </script>
 
-<header class="flex h-16 shrink-0 items-center gap-2 border-b">
+<header class="flex h-16 shrink-0 items-center gap-2 border-b print:hidden">
 	<div class="flex w-full items-center gap-2 px-3">
 		<Sidebar.Trigger />
 		<Separator orientation="vertical" class="mx-2 h-16!" />
