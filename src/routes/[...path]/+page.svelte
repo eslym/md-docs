@@ -96,9 +96,16 @@
 						target: '_blank'
 					};
 				}
+				if (url.pathname === base.pathname) {
+					// the resolved URL might not same as page URL but it is within the same page.
+					return {
+						href: `${url.search}${url.hash}`,
+						target: '_self'
+					};
+				}
 				let pathname = decodeURIComponent(url.pathname);
 				if (pathname.startsWith('/docs/')) {
-					pathname = pathname.slice('/docs/'.length - 1);
+					url.pathname = pathname.slice('/docs/'.length - 1);
 				}
 				return {
 					href: url.href,
