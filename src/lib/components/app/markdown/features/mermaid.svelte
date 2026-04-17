@@ -16,7 +16,7 @@
 
 	let id = $props.id();
 
-	let svg: string | null = $state(ctx.cache?.get(id) ?? null);
+	let svg: string | null = $state(ctx.cache?.get?.(id) ?? null);
 
 	let last_render: string | null = $state(null);
 
