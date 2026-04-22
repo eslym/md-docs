@@ -25,6 +25,6 @@
 	{@render children?.()}
 	<ScrollAreaPrimitive.Thumb
 		data-slot="scroll-area-thumb"
-		class="relative flex-1 rounded-full bg-border"
+		class="relative flex-1 rounded-full bg-border print:opacity-0!"
 	/>
 </ScrollAreaPrimitive.Scrollbar>

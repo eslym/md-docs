@@ -113,6 +113,10 @@
 		content: '';
 	}
 
+	:where(pre):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+		scrollbar-color: var(--color-border) var(--color-card);
+	}
+
 	@media print {
 		:where(pre):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
 			overflow-x: none;

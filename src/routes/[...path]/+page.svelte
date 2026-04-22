@@ -91,7 +91,7 @@
 <AppHeader {title} />
 
 <AppMain>
-	<section class="mx-auto my-16 prose px-4 md:prose-lg md:px-6">
+	<section class="mx-auto my-16 prose px-4 md:prose-lg md:px-6 print:max-w-full">
 		<MarkdownRenderer
 			root={data.doc.root}
 			options={data.meta.markdown?.render ?? {}}
