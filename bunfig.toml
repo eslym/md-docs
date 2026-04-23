@@ -3,4 +3,4 @@
 minimumReleaseAge = 259200
 
 # Exclude specific trusted packages from the age gate
-minimumReleaseAgeExcludes = ["typescript", "@types/node", "@types/bun"]
+minimumReleaseAgeExcludes = ["typescript", "@types/node", "@types/bun", "bun-types"]
