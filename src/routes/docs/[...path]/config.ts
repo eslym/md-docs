@@ -6,28 +6,18 @@ export { env };
 
 export const meta_in_md = /^\-{3,}\n([\s\S]+?)\n-{3,}\n/;
 
+const cache_control_maxage = z
+	.loose(z.coerce.integer().check(z.minimum(0)), 0)
+	.parse(private_env.CACHE_CONTROL_MAXAGE);
+
 export const cache_control =
-	private_env.CACHE_CONTROL || `public, max-age=${private_env.CACHE_CONTROL_MAXAGE || 0}`;
+	private_env.CACHE_CONTROL || `public, max-age=${cache_control_maxage || 0}`;
 
-const disable_substitution = z.loose(z.coerce.boolean(), false).parse(private_env.NO_SUBSTITUTE);
-
-export const should_substitute_markdown =
-	!disable_substitution && z.loose(z.coerce.boolean(), true).parse(private_env.SUBSTITUTE_MARKDOWN);
-
-export const should_substitute_yaml =
-	!disable_substitution && z.loose(z.coerce.boolean(), true).parse(private_env.SUBSTITUTE_YAML);
-
-export const should_substitute_json =
-	!disable_substitution && z.loose(z.coerce.boolean(), true).parse(private_env.SUBSTITUTE_JSON);
-
-export const should_substitute_html =
-	!disable_substitution && z.loose(z.coerce.boolean(), true).parse(private_env.SUBSTITUTE_HTML);
+const disable_hbs = z.loose(z.coerce.boolean(), false).parse(private_env.NO_HBS);
 
 export const format_arr = ['avif', 'jpeg', 'png', 'webp', 'auto'] as const;
 export type Format = (typeof format_arr)[number];
 
-const formats = new Set<string>(format_arr);
-
-export function is_format(format: string | null): format is Format {
-	return format !== null && formats.has(format);
-}
+const formats = new Set<string>(format_arr) as any as {
+	has(value: string): value is Format;
+};

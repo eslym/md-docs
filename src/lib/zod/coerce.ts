@@ -37,3 +37,25 @@ export function number(message?: string): z.ZodMiniType<number> {
 		return z.NEVER;
 	});
 }
+
+export function integer(message?: string): z.ZodMiniType<number> {
+	return z.transform((input, ctx) => {
+		if (typeof input === 'number' && Number.isInteger(input)) return input;
+		if (typeof input === 'bigint') {
+			const num = Number(input);
+			if (Number.isSafeInteger(num)) return num;
+		}
+		if (typeof input === 'string' && input.trim() !== '') {
+			const parsed = Number(input);
+			if (!isNaN(parsed) && Number.isInteger(parsed)) return parsed;
+		}
+		ctx.issues.push({
+			input,
+			code: 'invalid_type',
+			expected: 'integer-like',
+			received: input === null ? 'null' : typeof input,
+			message
+		});
+		return z.NEVER;
+	});
+}
