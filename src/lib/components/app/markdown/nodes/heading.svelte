@@ -1,16 +1,12 @@
 <script lang="ts">
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
-	import Node from '../node.svelte';
+	import { render_children } from '../node.svelte';
+	import type { MD } from '@eslym/markdown';
 
-	let {
-		node
-	}: {
-		node: MarkdownNodeMap['heading'];
-	} = $props();
+	let { node }: { node: MD.Heading } = $props();
 
-	let tag = $derived(`h${node.level}`);
+	let tag_name = $derived(`h${Math.max(1, Math.min(6, node.depth))}`);
 </script>
 
-<svelte:element this={tag} id={node.id}
-	>{#each node.children as child}<Node node={child} />{/each}</svelte:element
+<svelte:element this={tag_name} id={node.id}
+	>{@render render_children(node.children)}</svelte:element
 >

@@ -1,25 +1,24 @@
 <script lang="ts" module>
-	import type { MarkdownNode } from '$lib/server/markdown';
-	import type { Component } from 'svelte';
-
-	const renderers: Record<
-		`./nodes/${MarkdownNode['type']}.svelte`,
-		Component<{
-			node: MarkdownNode;
-		}>
-	> = import.meta.glob('./nodes/*.svelte', { eager: true, import: 'default' });
+	export { render_children };
 </script>
 
 <script lang="ts">
+	import { get_renderer } from './nodes';
+	import type { MD } from '@eslym/markdown';
+	import Self from './node.svelte';
+	import { IndexContext } from './context';
+
 	let {
 		node
 	}: {
-		node: MarkdownNode;
+		node: MD.Nodes;
 	} = $props();
 
-	let Render = $derived(
-		renderers[`./nodes/${node.type}.svelte`] ?? renderers['./nodes/comment.svelte']
-	);
+	let Render = $derived(get_renderer(node));
 </script>
+
+{#snippet render_children(nodes: MD.Nodes[])}{#each nodes as child, i}<IndexContext.Provider
+			index={i}><Self node={child} /></IndexContext.Provider
+		>{/each}{/snippet}
 
 {#key Render}<Render {node} />{/key}

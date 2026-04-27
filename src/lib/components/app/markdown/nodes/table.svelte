@@ -1,16 +1,24 @@
 <script lang="ts">
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
-	import Node from '../node.svelte';
+	import { TableContext } from '$lib/components/app/markdown/context';
+	import { render_children } from '../node.svelte';
+	import TableRow from './tableRow.svelte';
+	import type { MD } from '@eslym/markdown';
 
-	let {
-		node
-	}: {
-		node: MarkdownNodeMap['table'];
-	} = $props();
+	let { node }: { node: MD.Table } = $props();
+
+	let thead = $derived(node.children[0]);
+	let tbody = $derived(node.children.slice(1));
 </script>
 
-<div class="w-full overflow-x-auto">
-	<table>
-		{#each node.children as child}<Node node={child} />{/each}
-	</table>
-</div>
+<table>
+	<thead>
+		<TableContext.Provider {node} thead>
+			<TableRow node={thead} />
+		</TableContext.Provider>
+	</thead>
+	<tbody>
+		<TableContext.Provider {node}>
+			{@render render_children(tbody)}
+		</TableContext.Provider>
+	</tbody>
+</table>

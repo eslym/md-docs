@@ -1,20 +1,12 @@
-<script lang="ts" module>
-	const types = ['1', 'a', 'A', 'i', 'I'] as const;
-</script>
-
 <script lang="ts">
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
-	import Node from '../node.svelte';
+	import { render_children } from '../node.svelte';
+	import type { MD } from '@eslym/markdown';
 
-	let {
-		node
-	}: {
-		node: MarkdownNodeMap['list'];
-	} = $props();
-
-	let tag: 'ul' | 'ol' = $derived(node.ordered ? 'ol' : 'ul');
+	let { node }: { node: MD.List } = $props();
 </script>
 
-<svelte:element this={tag} start={node.start} type={node.ordered ? types[node.depth] : undefined}>
-	{#each node.children as child}<Node node={child} />{/each}
-</svelte:element>
+{#if node.ordered}
+	<ol start={node.start ?? undefined}>{@render render_children(node.children)}</ol>
+{:else}
+	<ul>{@render render_children(node.children)}</ul>
+{/if}

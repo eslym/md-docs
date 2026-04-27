@@ -1,27 +1,24 @@
 <script lang="ts">
-	import { MarkdownRenderContext } from '$lib/components/app/markdown/context';
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
+	import { MarkdownRenderContext } from '../context/markdown';
+	import type { MD } from '@eslym/markdown';
 
-	let {
-		node
-	}: {
-		node: MarkdownNodeMap['image'];
-	} = $props();
+	let { node }: { node: MD.Image } = $props();
 
 	const ctx = MarkdownRenderContext.get();
-
-	let config = $derived(ctx.resolveImage(node.src) ?? node.src);
+	let resolved_image = $derived(ctx.resolveImage(node.url));
 </script>
 
-{#if typeof config === 'string'}
-	<img src={config} alt={node.alt} title={node.title} />
-{:else if config.sources}
-	<picture>
-		{#each config.sources as source}
-			<source {...source} />
-		{/each}
-		<img src={config.src} alt={node.alt} title={node.title} />
-	</picture>
+{#if resolved_image}
+	{#if resolved_image.sources?.length}
+		<picture>
+			{#each resolved_image.sources as source, i (i)}
+				<source {...source} />
+			{/each}
+			<img src={resolved_image.src} alt={node.alt ?? ''} title={node.title ?? undefined} />
+		</picture>
+	{:else}
+		<img src={resolved_image.src} alt={node.alt ?? ''} title={node.title ?? undefined} />
+	{/if}
 {:else}
-	<img src={config.src} alt={node.alt} title={node.title} />
+	<img src={node.url} alt={node.alt ?? ''} title={node.title ?? undefined} />
 {/if}

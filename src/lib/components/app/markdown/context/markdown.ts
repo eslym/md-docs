@@ -1,3 +1,4 @@
+import type { MD } from '@eslym/markdown';
 import { Context } from 'runed';
 import type { HTMLAnchorAttributes, HTMLAttributes, HTMLSourceAttributes } from 'svelte/elements';
 
@@ -15,4 +16,6 @@ export const MarkdownRenderContext = new Context<{
 				sources?: Omit<HTMLSourceAttributes, keyof HTMLAttributes<any>>[];
 		  }
 		| undefined;
+	readonly findDefinition: (id: string) => MD.Definition | undefined;
+	readonly findFootnote: (id: string) => MD.FootnoteDefinition | undefined;
 }>('markdown render context');

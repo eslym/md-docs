@@ -1,14 +1,8 @@
 <script lang="ts">
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
-	import Node from '../node.svelte';
+	import { render_children } from '../node.svelte';
+	import type { MD } from '@eslym/markdown';
 
-	let {
-		node
-	}: {
-		node: MarkdownNodeMap['blockquote'];
-	} = $props();
+	let { node }: { node: MD.BlockQuote } = $props();
 </script>
 
-<blockquote>
-	{#each node.children as child}<Node node={child} />{/each}
-</blockquote>
+<blockquote>{@render render_children(node.children)}</blockquote>

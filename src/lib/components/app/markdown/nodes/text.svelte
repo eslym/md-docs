@@ -1,11 +1,7 @@
 <script lang="ts">
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
+	import type { MD } from '@eslym/markdown';
 
-	let {
-		node
-	}: {
-		node: MarkdownNodeMap['text'];
-	} = $props();
+	let { node }: { node: MD.Text } = $props();
 </script>
 
 {node.value}

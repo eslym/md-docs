@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { MarkdownRenderContext } from '$lib/components/app/markdown/context';
+	import { MarkdownRenderContext } from './context';
 	import Node from './node.svelte';
-	import type { MarkdownNode } from '$lib/server/markdown';
+	import type { MD } from '@eslym/markdown';
 
 	let {
 		root,
@@ -9,8 +9,16 @@
 		resolveLink = () => undefined,
 		resolveImage = () => undefined
 	}: {
-		root: MarkdownNode[];
+		root: MD.Document;
 	} & Partial<ReturnType<typeof MarkdownRenderContext.get>> = $props();
+
+	function findDefinition(id: string) {
+		return root.definitions?.[id];
+	}
+
+	function findFootnote(id: string) {
+		return root.footnotes?.[id];
+	}
 
 	MarkdownRenderContext.set({
 		get options() {
@@ -21,8 +29,14 @@
 		},
 		get resolveImage() {
 			return resolveImage;
+		},
+		get findDefinition() {
+			return findDefinition;
+		},
+		get findFootnote() {
+			return findFootnote;
 		}
 	});
 </script>
 
-{#each root as node}<Node {node} />{/each}
+{#each root.children as node}<Node {node} />{/each}

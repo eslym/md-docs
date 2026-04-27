@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { MarkdownRenderContext } from '../context';
-	import Mermaid from '$lib/components/app/markdown/features/mermaid.svelte';
-	import Shiki from '$lib/components/app/markdown/features/shiki.svelte';
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
+	import { MarkdownRenderContext } from '../context/markdown';
+	import Mermaid from '../features/mermaid.svelte';
+	import Shiki from '../features/shiki.svelte';
+	import type { MD } from '@eslym/markdown';
 
 	let {
 		node
 	}: {
-		node: MarkdownNodeMap['code'];
+		node: MD.Code;
 	} = $props();
 
 	const ctx = MarkdownRenderContext.get();
