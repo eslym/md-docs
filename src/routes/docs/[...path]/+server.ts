@@ -1,123 +1,182 @@
-import { extname, posix } from 'node:path';
-import {
-	cache_control,
-	should_substitute_html,
-	should_substitute_json,
-	should_substitute_yaml
-} from './config';
-import { cached_data, cached_text, adapters } from './data';
-import { response_dimension, response_image } from './image';
-import { if_modified_since, response_error, cache_headers } from './http';
-import { response_markdown, response_mdast } from './markdown';
-import { resolve } from './resolve';
+import { posix, parse, join } from 'node:path';
+import { cache_control, check_format, check_width, hbs_enabled } from './config';
+import badRequestMd from './badrequest.md?raw';
+import notFoundMd from './notfound.md?raw';
+import serverError from './servererror.md.hbs';
+import { lazy } from '$lib/lazy';
+import { resolve } from '$lib/server/resolve';
+import { version } from '$app/environment';
+import { cached_file } from '$lib/server/cache';
+import * as z from '$lib/zod';
+import { docs_path } from '$lib/server/dir';
+import sharp from 'sharp';
+import { hash_file } from '$lib/server/hash';
 
 export const trailingSlash = 'ignore';
 
-export async function GET({ url, params, request }) {
+const headers_init = z.loose(z.record(z.string(), z.string()), {} as Record<string, string>);
+
+const http = lazy({
+	badrequest: () =>
+		new Response(badRequestMd, {
+			status: 400,
+			headers: {
+				'Content-Type': 'text/markdown; charset=utf-8'
+			}
+		}),
+	notfound: () =>
+		new Response(notFoundMd, {
+			status: 404,
+			headers: {
+				'Content-Type': 'text/markdown; charset=utf-8'
+			}
+		})
+});
+
+const hbs = /\.hbs$/i;
+
+export async function GET({ url, params, request, locals }) {
 	const path = posix.join('/', params.path);
-	if (path.includes('/.')) {
-		return response_error(404);
+	if (path.includes('/.') || hbs.test(path)) {
+		return http.notfound;
 	}
-	const [found, resolved_path, filepath, mtime] = await resolve(path);
+	const [found, resolved_path, absolute] = await resolve(path, {
+		hbs: hbs_enabled
+	});
 	if (!found) {
-		return response_error(404);
+		return http.notfound;
 	}
 	try {
-		const ext = extname(filepath).toLowerCase();
-		const type = url.searchParams.get('type');
-		const client_last_modified = if_modified_since(request);
-		if (mtime <= client_last_modified) {
-			return new Response(null, {
-				status: 304,
-				headers: {
-					'Cache-Control': cache_control
-				}
-			});
-		}
-		if (type === 'mdast') {
-			if (ext !== '.md') {
-				return response_error(400);
+		const headers = new Headers({
+			'Content-Location': resolved_path
+		});
+		let file = Bun.file(absolute);
+		let type = file.type;
+		if (hbs.test(absolute)) {
+			const prefix = Bun.hash.xxHash32(JSON.stringify(version + JSON.stringify(locals)));
+			file = await cached_file(
+				`hbs:${prefix}:${resolved_path}`,
+				(cached) => cached.lastModified < file.lastModified,
+				async () => Handlebars.compile(await file.text())(locals)
+			);
+			type = Bun.file(resolved_path).type;
+		} else if (url.searchParams.has('w') || url.searchParams.has('f')) {
+			let width = check_width.parse(url.searchParams.get('w'));
+			let format = check_format.parse(url.searchParams.get('f'));
+			if (!width && !format) {
+				return http.badrequest;
 			}
-			return response_mdast(resolved_path, mtime);
-		}
-		if (type === 'data') {
-			if (adapters[ext]) {
-				const file = await cached_data(
-					resolved_path,
-					mtime,
-					ext === '.json' ? should_substitute_json : should_substitute_yaml
-				);
-				return new Response(file, {
-					headers: {
-						'Content-Type': 'application/vnd+msgpack',
-						...cache_headers(mtime)
-					}
-				});
-			} else {
-				return response_error(400);
-			}
-		}
-		if (type === 'dimension') {
-			if (ext === '.svg' || !Bun.file(filepath).type.startsWith('image/')) {
-				return response_error(400);
-			}
-			return response_dimension(resolved_path, mtime);
-		}
-		if (ext === '.md') {
-			return response_markdown(resolved_path, mtime);
-		} else if (ext === '.json') {
-			const file = await cached_text(resolved_path, mtime, should_substitute_json);
-			return new Response(file, {
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8',
-					...cache_headers(mtime)
-				}
-			});
-		} else if (ext === '.yml' || ext === '.yaml') {
-			const file = await cached_text(resolved_path, mtime, should_substitute_yaml);
-			return new Response(file, {
-				headers: {
-					'Content-Type': 'text/yaml; charset=utf-8',
-					...cache_headers(mtime)
-				}
-			});
-		} else if (ext === '.html') {
-			const file = await cached_text(resolved_path, mtime, should_substitute_html);
-			return new Response(file, {
-				headers: {
-					'Content-Type': 'text/html; charset=utf-8',
-					...cache_headers(mtime)
-				}
-			});
-		}
-		const file = Bun.file(filepath);
-		if (
-			file.type.startsWith('image/') &&
-			(url.searchParams.has('w') || url.searchParams.has('h') || url.searchParams.has('f'))
-		) {
-			return response_image(
+			await optimize(
 				resolved_path,
-				mtime,
-				url.searchParams.get('w'),
-				url.searchParams.get('h'),
-				url.searchParams.get('f')
+				file,
+				(optimized) => (file = optimized),
+				headers,
+				format,
+				width
 			);
 		}
-		return new Response(file, {
-			headers: cache_headers(mtime)
-		});
-	} catch (err) {
-		console.error(err);
-		const inspect = Bun.inspect(err, { colors: true });
-		return Response.json(
-			{
-				error: '500 Internal Server error',
-				details: inspect
-			},
-			{
-				status: 500,
-				headers: { 'Content-Type': 'application/json; charset=utf-8' }
-			}
+
+		const { base, dir } = parse(docs_path(resolved_path));
+		const headers_file = Bun.file(join(dir, `.${base}.headers.json`));
+		const custom_headers =
+			headers_file.size > 0
+				? await headers_file
+						.json()
+						.then((data) => headers_init.parse(data))
+						.catch(() => ({}))
+				: {};
+
+		return etagged(
+			file,
+			request.headers.get('If-None-Match'),
+			merge_headers(
+				{
+					'Content-Type': type,
+					'Cache-Control': cache_control
+				},
+				custom_headers,
+				headers
+			)
 		);
+	} catch (err) {
+		console.warn(`Error serving ${absolute}:`, err);
+		const details = Bun.inspect(err, { colors: true });
+		const content = serverError({ details });
+		return new Response(content, {
+			status: 500,
+			headers: {
+				'Content-Type': 'text/markdown; charset=utf-8'
+			}
+		});
+	}
+}
+
+function merge_headers(...headers_list: HeadersInit[]) {
+	const result = new Headers();
+	for (const headers of headers_list) {
+		for (const [key, value] of new Headers(headers)) {
+			result.set(key, value);
+		}
+	}
+	return result;
+}
+
+async function etagged(
+	file: Bun.BunFile,
+	expected: string | null | undefined,
+	headers: HeadersInit
+) {
+	headers = new Headers(headers);
+	const etag = `"${await hash_file(file)}"`;
+	if (expected === etag) {
+		return new Response(null, {
+			status: 304,
+			headers: {
+				'Cache-Control': headers.get('cache-control') || cache_control,
+				ETag: etag
+			}
+		});
+	}
+	headers.set('ETag', etag);
+	return new Response(file, {
+		headers: merge_headers(headers, {
+			ETag: etag
+		})
+	});
+}
+
+async function optimize(
+	path: string,
+	file: Bun.BunFile,
+	out: (file: Bun.BunFile) => void,
+	headers: Headers,
+	format: Exclude<z.infer<typeof check_format>, undefined> = 'auto',
+	width: Exclude<z.infer<typeof check_width>, undefined> = 'auto'
+) {
+	const metadata = await sharp(await file.arrayBuffer()).metadata();
+	if (format === 'auto' && metadata.format === 'svg') {
+		// Don't try to rasterize SVGs if the client didn't explicitly request it
+		return;
+	}
+	const key = `img:${format}:${width}:${Bun.SHA256.hash(file, 'hex')}:${path}`;
+	const cached = await cached_file(
+		key,
+		(cached) => cached.lastModified < file.lastModified,
+		async () => {
+			const opt = sharp(await file.arrayBuffer()).rotate();
+			if (format !== 'auto') {
+				opt.toFormat(format);
+			}
+			if (width !== 'auto') {
+				opt.resize({ width, withoutEnlargement: true });
+			}
+			return await opt.toBuffer();
+		}
+	);
+	out(cached);
+	if (format !== 'auto') {
+		const { name } = parse(path);
+		headers.set('Content-Type', `image/${format}`);
+		headers.set('Content-Disposition', `inline; filename="${name}.${format}"`);
 	}
 }

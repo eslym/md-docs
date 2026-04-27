@@ -10,6 +10,12 @@
 			"options": {
 				"parser": "svelte"
 			}
+		},
+		{
+			"files": "*.md.hbs",
+			"options": {
+				"parser": "markdown"
+			}
 		}
 	],
 	"tailwindStylesheet": "./src/routes/layout.css"

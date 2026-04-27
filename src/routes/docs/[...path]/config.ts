@@ -13,11 +13,10 @@ const cache_control_maxage = z
 export const cache_control =
 	private_env.CACHE_CONTROL || `public, max-age=${cache_control_maxage || 0}`;
 
-const disable_hbs = z.loose(z.coerce.boolean(), false).parse(private_env.NO_HBS);
+export const hbs_enabled = !z.loose(z.coerce.boolean(), false).parse(private_env.NO_HBS);
 
-export const format_arr = ['avif', 'jpeg', 'png', 'webp', 'auto'] as const;
-export type Format = (typeof format_arr)[number];
+export const check_width = z.loose(
+	z.union([z.coerce.integer().check(z.minimum(1)), z.literal('auto')])
+);
 
-const formats = new Set<string>(format_arr) as any as {
-	has(value: string): value is Format;
-};
+export const check_format = z.loose(z.enum(['avif', 'jpeg', 'png', 'webp', 'auto']));

@@ -6,7 +6,15 @@ declare global {
 			message: string;
 			details?: string;
 		}
-		// interface Locals {}
+		interface Locals {
+			app: {
+				name: string;
+				subtitle?: string;
+				favicon: string;
+				themeCss: string;
+			};
+			[key: string]: unknown;
+		}
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
