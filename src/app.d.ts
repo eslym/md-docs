@@ -35,22 +35,23 @@ declare module '@eslym/markdown' {
 			id?: Nullable<string>;
 		}
 
-		interface TabList extends Parent {
-			type: 'tablist';
-			storage?: Nullable<string>;
-			key?: Nullable<string>;
-			children: Tab[];
+		interface FootnoteReference {
+			domId?: Nullable<string>;
+			linkId?: Nullable<string>;
 		}
 
-		interface Tab extends Parent {
-			type: 'tab';
-			id?: Nullable<string>;
-			title: string;
+		interface FootnoteDefinition {
+			domId?: Nullable<string>;
+			linkId?: Nullable<string>;
+		}
+
+		interface FootnoteBackRef extends Node {
+			type: 'footnoteBackRef';
+			id: string;
 		}
 
 		interface NodeMap {
-			tablist: TabList;
-			tab: Tab;
+			footnoteBackRef: FootnoteBackRef;
 		}
 	}
 }

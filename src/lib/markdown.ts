@@ -46,6 +46,12 @@ export function transform_nodes(doc: MD.Document) {
 	const meta = markdown_meta_schema.parse(parse(doc.meta ?? ''));
 	const languages = new Set<string>();
 
+	for (const footnote of Object.values(doc.footnotes ?? {})) {
+		footnote.domId = slugger.slug(`note ${footnote.identifier}`);
+		footnote.linkId = slugger.slug(`note ref ${footnote.identifier}`);
+		insert_back_ref(footnote);
+	}
+
 	walker.on('enter', 'heading', (node) => {
 		if (typeof meta.title === 'undefined' && node.depth === 1) {
 			meta.title = strip_whitespace(collectText(node));
@@ -72,19 +78,22 @@ export function transform_nodes(doc: MD.Document) {
 			if (typeof meta.description === 'undefined') {
 				meta.description = strip_whitespace(collectText(node));
 			}
+			if (node.children.length) {
+				return ctx.replaceWith(node.children);
+			}
 			return ctx.remove();
 		}
 	});
+	walker.on('enter', 'footnoteReference', (node, ctx) => {
+		const def = doc.footnotes?.[node.identifier];
+		if (!def) {
+			return ctx.remove();
+		}
+		node.domId = def.linkId;
+		node.linkId = def.domId;
+	});
 	walker.on('enter', 'code', (node) => {
 		languages.add(node.lang ?? 'text');
-	});
-	walker.on('exit', 'containerDirective', (node, ctx) => {
-		if (node.name === 'tabs') {
-			const result = transform_tabs(node);
-			if (result) {
-				return ctx.replaceWith(result);
-			}
-		}
 	});
 	walker.on('exit', 'text', (node, ctx) => {
 		if (ctx.previousSibling?.type === 'text') {
@@ -113,49 +122,23 @@ function strip_whitespace(value: string) {
 	return value.trim().replace(/\s+/g, ' ');
 }
 
-function transform_tabs(node: MD.ContainerDirective): MD.TabList | null {
-	const headings: MD.Heading[] = [];
-	let lowestDepth = Infinity;
-
-	for (const child of node.children) {
-		if (child.type === 'heading') {
-			headings.push(child);
-			if (child.depth < lowestDepth) {
-				lowestDepth = child.depth;
-			}
-		}
+function insert_back_ref(def: MD.FootnoteDefinition) {
+	if (!def.linkId) {
+		return;
 	}
-
-	if (headings.length === 0) {
-		return null;
-	}
-
-	const tabs: MD.Tab[] = [];
-	for (const child of node.children) {
-		if (child.type === 'heading' && child.depth === lowestDepth) {
-			const title = collectText(child);
-			const tab: MD.Tab = {
-				type: 'tab',
-				id: child.id,
-				title,
-				children: [],
-				pos: child.pos
-			};
-			tabs.push(tab);
-			continue;
-		}
-		const last = tabs.at(-1);
-		if (!last) continue;
-		last.children.push(child);
-		if (last.pos && child.pos) {
-			last.pos[1] = child.pos[1];
-		}
-	}
-	return {
-		type: 'tablist',
-		children: tabs,
-		storage: node.attributes?.['storage'],
-		key: node.attributes?.['key'],
-		pos: node.pos
+	const back_ref: MD.FootnoteBackRef = {
+		type: 'footnoteBackRef',
+		id: def.linkId
 	};
+	const walker = new NodeWalker();
+	let last_paragraph: MD.Paragraph = null!;
+	walker.on('enter', 'paragraph', (node) => {
+		last_paragraph = node;
+	});
+	walker.execute(def);
+	if (last_paragraph) {
+		last_paragraph.children.push(back_ref);
+	} else {
+		def.children.push(back_ref);
+	}
 }

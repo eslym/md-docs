@@ -2,7 +2,7 @@
 	import { render_children } from '../node.svelte';
 	import type { MD } from '@eslym/markdown';
 
-	let { node }: { node: MD.leafDirective } = $props();
+	let { node }: { node: MD.LeafDirective } = $props();
 
 	// make unknown directive render like it does not exists,
 	// ignoring all attributes and just render the children.
