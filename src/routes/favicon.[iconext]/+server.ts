@@ -91,7 +91,8 @@ async function build_icon_png(
 					width: size,
 					height: size,
 					fit: 'inside',
-					background: { r: 0, g: 0, b: 0, alpha: 0 }
+					background: { r: 0, g: 0, b: 0, alpha: 0 },
+					withoutEnlargement: false
 				})
 				.png()
 				.toBuffer();

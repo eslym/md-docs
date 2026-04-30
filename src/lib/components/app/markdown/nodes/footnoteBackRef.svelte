@@ -4,6 +4,8 @@
 	let { node }: { node: MD.FootnoteBackRef } = $props();
 </script>
 
-<a href={node.id}
-	><CornerRightUpIcon class="size-6" /><span class="sr-only"> Back to reference </span></a
+<a href="#{node.id}"
+	><CornerRightUpIcon class="inline-block size-3" /><span class="sr-only">
+		Back to reference
+	</span></a
 >

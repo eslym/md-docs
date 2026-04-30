@@ -159,7 +159,7 @@ async function optimize(
 		// Don't try to rasterize SVGs if the client didn't explicitly request it
 		return;
 	}
-	const key = `img:${format}:${width}:${Bun.SHA256.hash(file, 'hex')}:${path}`;
+	const key = `img:${format}:${width}:${await hash_file(file)}:${path}`;
 	const cached = await cached_file(
 		key,
 		(cached) => cached.lastModified < file.lastModified,
@@ -169,7 +169,8 @@ async function optimize(
 				opt.toFormat(format);
 			}
 			if (width !== 'auto') {
-				opt.resize({ width, withoutEnlargement: true });
+				// allow enlargement for SVGs, since it won't reduce quality, and may be desired to fit a specific layout
+				opt.resize({ width, withoutEnlargement: metadata.format !== 'svg' });
 			}
 			return await opt.toBuffer();
 		}

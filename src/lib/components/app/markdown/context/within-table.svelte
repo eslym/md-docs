@@ -1,13 +1,14 @@
 <script lang="ts" module>
-	export const TableContext = Object.assign(
-		new Context<{
-			readonly node: MD.Table;
-			readonly thead: boolean;
-		}>('table'),
-		{
-			Provider: Self
-		}
-	);
+	const ctx = new Context<{
+		readonly node: MD.Table;
+		readonly thead: boolean;
+	}>('table');
+	Object.defineProperty(ctx, 'Provider', {
+		get: () => Self
+	});
+	export const TableContext = ctx as typeof ctx & {
+		Provider: typeof Self;
+	};
 </script>
 
 <script lang="ts">

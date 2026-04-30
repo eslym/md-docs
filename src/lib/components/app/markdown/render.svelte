@@ -9,7 +9,7 @@
 		resolveLink = () => undefined,
 		resolveImage = () => undefined
 	}: {
-		root: MD.Document;
+		root: Pick<MD.Document, 'children' | 'definitions' | 'footnotes'>;
 	} & Partial<ReturnType<typeof MarkdownRenderContext.get>> = $props();
 
 	function findDefinition(id: string) {
@@ -40,3 +40,12 @@
 </script>
 
 {#each root.children as node}<Node {node} />{/each}
+
+{#if root.footnotes && Object.values(root.footnotes).length > 0}
+	<hr />
+	<ol class="grid gap-x-4 gap-y-2 text-[0.75em] md:grid-cols-2">
+		{#each Object.values(root.footnotes) as footnote}
+			<Node node={footnote} />
+		{/each}
+	</ol>
+{/if}

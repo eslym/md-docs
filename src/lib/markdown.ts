@@ -3,6 +3,12 @@ import { slug } from 'github-slugger';
 import { parse } from 'yaml';
 import * as z from '$lib/zod';
 
+export interface TOCEntry {
+	id: string;
+	title: string;
+	children?: TOCEntry[];
+}
+
 const _schema = z.object({
 	title: z.optional(z.loose(z.string())),
 	description: z.optional(z.loose(z.string())),
@@ -40,11 +46,19 @@ export class Slugger {
 	}
 }
 
-export function transform_nodes(doc: MD.Document) {
+export function transform_nodes(doc: MD.Document): Omit<MD.Document, 'meta'> & {
+	toc?: TOCEntry[];
+	meta: z.infer<typeof markdown_meta_schema>;
+	languages: Set<string>;
+} {
 	const slugger = new Slugger();
 	const walker = new NodeWalker();
 	const meta = markdown_meta_schema.parse(parse(doc.meta ?? ''));
 	const languages = new Set<string>();
+
+	const toc = meta.toc ?? true;
+	const toc_start = toc === true ? 2 : toc ? toc?.startDepth : undefined;
+	const tocs = [{ children: [], id: 'root', title: '' }] as TOCEntry[];
 
 	for (const footnote of Object.values(doc.footnotes ?? {})) {
 		footnote.domId = slugger.slug(`note ${footnote.identifier}`);
@@ -57,6 +71,15 @@ export function transform_nodes(doc: MD.Document) {
 			meta.title = strip_whitespace(collectText(node));
 		}
 		node.id = determine_id(node, slugger);
+		if (toc_start && node.depth >= toc_start) {
+			const depth = node.depth - toc_start + 1;
+			const entry: TOCEntry = { id: node.id, title: strip_whitespace(collectText(node)) };
+			const parent = tocs[depth - 1];
+			if (parent) {
+				(parent.children ??= []).push(entry);
+				tocs[depth] = entry;
+			}
+		}
 	});
 	walker.on('enter', 'textDirective', (node, ctx) => {
 		if (node.name === 'setId') {
@@ -104,7 +127,13 @@ export function transform_nodes(doc: MD.Document) {
 			return ctx.remove();
 		}
 	});
-	return walker.execute(doc);
+	walker.execute(doc);
+	return {
+		...doc,
+		toc: toc_start !== undefined ? tocs[0].children : undefined,
+		meta,
+		languages
+	};
 }
 
 function determine_id(node: MD.Heading, slugger: Slugger) {

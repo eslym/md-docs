@@ -1,12 +1,13 @@
 <script lang="ts" module>
-	export const IndexContext = Object.assign(
-		new Context<{
-			readonly index: number;
-		}>('table'),
-		{
-			Provider: Self
-		}
-	);
+	const ctx = new Context<{
+		readonly index: number;
+	}>('table');
+	Object.defineProperty(ctx, 'Provider', {
+		get: () => Self
+	});
+	export const IndexContext = ctx as typeof ctx & {
+		Provider: typeof Self;
+	};
 </script>
 
 <script lang="ts">

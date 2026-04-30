@@ -16,7 +16,7 @@ async function find_setup(): Promise<((url: URL) => MaybePromise<any>) | undefin
 	} catch {
 		return undefined;
 	}
-	const mod = await import(resolved_path);
+	const mod = await import(/* @vite-ignore */ resolved_path);
 	if (typeof mod.default === 'function') {
 		return mod.default;
 	}
