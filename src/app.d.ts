@@ -12,6 +12,7 @@ declare global {
 				subtitle?: string;
 				favicon: string;
 				themeCss: string;
+				[key: string]: unknown;
 			};
 			[key: string]: unknown;
 		}

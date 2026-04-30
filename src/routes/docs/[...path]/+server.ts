@@ -11,6 +11,7 @@ import * as z from '$lib/zod';
 import { docs_path } from '$lib/server/dir';
 import sharp from 'sharp';
 import { hash_file } from '$lib/server/hash';
+import * as Handlebars from 'handlebars';
 
 export const trailingSlash = 'ignore';
 
@@ -48,7 +49,7 @@ export async function GET({ url, params, request, locals }) {
 	}
 	try {
 		const headers = new Headers({
-			'Content-Location': resolved_path
+			'Content-Location': `/docs${resolved_path}`
 		});
 		let file = Bun.file(absolute);
 		let type = file.type;
@@ -88,7 +89,7 @@ export async function GET({ url, params, request, locals }) {
 
 		return etagged(
 			file,
-			request.headers.get('If-None-Match'),
+			request.headers.get('if-none-match'),
 			merge_headers(
 				{
 					'Content-Type': type,

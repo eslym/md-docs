@@ -1,6 +1,7 @@
 import Handlebars, { type HelperOptions } from 'handlebars';
 import * as z from '$lib/zod';
 import { env } from '$env/dynamic/private';
+import { env as public_env } from '$env/dynamic/public';
 import { clear_cache } from '$lib/server/cache';
 import { docs_path } from '$lib/server/dir';
 import faviconSvg from '$lib/assets/favicon.svg';
@@ -27,16 +28,17 @@ async function find_setup(): Promise<((url: URL) => MaybePromise<any>) | undefin
 
 const default_locals: App.Locals = {
 	app: {
-		name: 'md-docs',
-		favicon: faviconSvg,
-		themeCss
+		name: public_env.PUBLIC_APP_NAME || 'md-docs',
+		subtitle: public_env.PUBLIC_APP_SUBTITLE ?? undefined,
+		favicon: public_env.PUBLIC_APP_FAVICON || faviconSvg,
+		themeCss: public_env.PUBLIC_APP_THEME || themeCss
 	}
 };
 
 const locals_schema = z.loose(
 	z.looseObject({
 		app: z.loose(
-			z.object({
+			z.looseObject({
 				name: z.loose(z.string(), default_locals.app.name),
 				subtitle: z.optional(z.string()),
 				favicon: z.loose(z.string(), default_locals.app.favicon),
