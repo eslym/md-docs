@@ -10,15 +10,17 @@
 	let tbody = $derived(node.children.slice(1));
 </script>
 
-<table>
-	<thead>
-		<TableContext.Provider {node} thead>
-			<TableRow node={thead} />
-		</TableContext.Provider>
-	</thead>
-	<tbody>
-		<TableContext.Provider {node}>
-			{@render render_children(tbody)}
-		</TableContext.Provider>
-	</tbody>
-</table>
+<div class="w-full overflow-x-auto">
+	<table>
+		<thead>
+			<TableContext.Provider {node} thead>
+				<TableRow node={thead} />
+			</TableContext.Provider>
+		</thead>
+		<tbody>
+			<TableContext.Provider {node}>
+				{@render render_children(tbody)}
+			</TableContext.Provider>
+		</tbody>
+	</table>
+</div>

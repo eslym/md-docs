@@ -43,7 +43,7 @@
 
 {#if root.footnotes && Object.values(root.footnotes).length > 0}
 	<hr />
-	<ol class="grid gap-x-4 gap-y-2 text-[0.75em] md:grid-cols-2">
+	<ol class="text-[0.75em]">
 		{#each Object.values(root.footnotes) as footnote}
 			<Node node={footnote} />
 		{/each}
