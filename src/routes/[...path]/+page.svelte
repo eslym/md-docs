@@ -1,21 +1,40 @@
 <script lang="ts" module>
-	function normalize(str: string) {
-		return str.trim().replace(/\s+/g, ' ');
+	const supported_formats = new Set(['avif', 'webp', 'jpeg', 'png']);
+
+	function optimization_widths(src: string): number[] {
+		const widths = new Set<number>();
+		const specs = src.split(',').map((s) => s.trim());
+		for (const spec of specs) {
+			let match = /^(\d+)w$/.exec(spec);
+			if (match) {
+				widths.add(parseInt(match[1], 10));
+				continue;
+			}
+			match = /^(\d+)\.\.(\d+);(\d+)$/.exec(spec);
+			if (match) {
+				const a = parseInt(match[1], 10);
+				const b = parseInt(match[2], 10);
+				const step = parseInt(match[3], 10);
+				const start = Math.min(a, b);
+				const end = Math.max(a, b);
+				for (let w = start; w <= end; w += step) {
+					widths.add(w);
+				}
+			}
+		}
+		return [...widths].sort((a, b) => a - b);
 	}
 </script>
 
 <script lang="ts">
-	import { env } from '$env/dynamic/public';
-	import { MermaidContext } from '$lib/components/app/markdown/features/mermaid.svelte';
 	import type { Mermaid } from '$lib/mermaid';
-	import { page } from '$app/state';
-	import { optimizable, resolve_url } from '$lib/url';
 	import type { HighlighterCore } from 'shiki/core';
-	import { ShikiContext } from '$lib/components/app/markdown/features/shiki.svelte';
-	import { MarkdownRenderer } from '$lib/components/app/markdown';
-	import { gen_widths } from '$lib/width';
 	import AppMain from './app-main.svelte';
 	import AppHeader from './app-header.svelte';
+	import { ShikiContext } from '$lib/components/app/markdown/features/shiki.svelte';
+	import { MermaidContext } from '$lib/components/app/markdown/features/mermaid.svelte';
+	import { page } from '$app/state';
+	import { MarkdownRenderer } from '$lib/components/app/markdown';
 
 	let { data } = $props();
 
@@ -25,18 +44,6 @@
 
 	let mermaid_instance: Mermaid | undefined = $state(undefined);
 	let shiki_instance: HighlighterCore | undefined = $state(undefined);
-
-	let title = $derived.by(() => {
-		if (data.meta.title) {
-			return normalize(data.meta.title);
-		}
-		if (data.doc.toc[0]?.text) {
-			return data.doc.toc[0].text;
-		}
-		return 'Untitled Document';
-	});
-
-	let description = $derived(normalize(data.meta.description || ''));
 
 	let base = $derived(new URL(data.loc, page.url.origin));
 
@@ -70,31 +77,20 @@
 </script>
 
 <svelte:head>
-	<title>{title}{env.PUBLIC_APP_TITLE_SUFFIX ?? ''}</title>
-	{#if description}
-		<meta name="description" content={description} />
-		<meta property="og:description" content={description} />
-	{/if}
-	{#if data.meta.author}
-		{#if typeof data.meta.author === 'string'}
-			<meta name="author" content={normalize(data.meta.author)} />
-		{:else}
-			<meta name="author" content={normalize(data.meta.author.name)} />
-			{#if data.meta.author.url}
-				<link rel="author" href={resolve_url(normalize(data.meta.author.url), page.url)} />
-			{/if}
-		{/if}
+	<title>{data.doc.meta.title ?? 'Untitled Document'}</title>
+	{#if data.doc.meta.description}
+		<meta name="description" content={data.doc.meta.description} />
+		<meta property="og:description" content={data.doc.meta.description} />
 	{/if}
 	<link rel="alternate" type="text/markdown" href={data.loc} />
 </svelte:head>
 
-<AppHeader {title} />
+<AppHeader title={data.doc.meta.title ?? 'Untitled Document'} />
 
 <AppMain>
 	<section class="mx-auto my-16 prose px-4 md:prose-lg md:px-6 print:max-w-full">
 		<MarkdownRenderer
-			root={data.doc.root}
-			options={data.meta.markdown?.render ?? {}}
+			root={data.doc}
 			resolveLink={(href) => {
 				if (!URL.canParse(href, base)) return undefined;
 				const url = new URL(href, base);
@@ -123,29 +119,51 @@
 			resolveImage={(src) => {
 				if (!URL.canParse(src, base)) return;
 				const url = new URL(src, base);
-				if (!optimizable(url, base)) {
-					return { src: url.href };
-				}
 				const pathname = decodeURIComponent(url.pathname);
-				const dim = data.images.get(pathname);
-				if (!dim) return { src: url.href };
-				const widths = gen_widths(dim.width);
-				return {
-					src: url.href,
-					sources: ['avif', 'webp', 'png'].map((format) => {
-						const srcset = widths
-							.map((width) => {
-								const u = new URL(pathname, base.origin);
-								u.searchParams.set('f', format);
-								u.searchParams.set('w', width.toString());
-								return `${u.href} ${width}w`;
-							})
-							.join(', ');
-						return {
+				if (
+					url.origin !== page.url.origin ||
+					!pathname.startsWith('/docs/') ||
+					!url.searchParams.has('auto-srcset')
+				) {
+					return {
+						src: url.href
+					};
+				}
+				const formats = (url.searchParams.get('format') || '')
+					.split(',')
+					.map((s) => s.trim().toLowerCase())
+					.filter((s) => supported_formats.has(s));
+				const widths = optimization_widths(url.searchParams.get('width') || '');
+				if (formats.length === 0 && widths.length === 0) {
+					return {
+						src: url.href
+					};
+				}
+				if (formats.length === 0) {
+					return {
+						sources: [
+							{
+								srcset: widths.map((w) => `${url.pathname}?w=${w} ${w}w`).join(', ')
+							}
+						],
+						src: url.pathname
+					};
+				}
+				if (widths.length === 0) {
+					return {
+						sources: formats.map((format) => ({
 							type: `image/${format}`,
-							srcset
-						};
-					})
+							srcset: `${url.pathname}?f=${format} 1x`
+						})),
+						src: url.pathname
+					};
+				}
+				return {
+					sources: formats.map((format) => ({
+						type: `image/${format}`,
+						srcset: widths.map((w) => `${url.pathname}?f=${format}&w=${w} ${w}w`).join(', ')
+					})),
+					src: url.pathname
 				};
 			}}
 		/>

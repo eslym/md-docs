@@ -2,6 +2,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { useSidebar } from '$lib/components/ui/sidebar';
 	import { cn } from '$lib/utils';
+	import { IsMounted } from 'runed';
 	import type { Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 
@@ -12,10 +13,15 @@
 	}: { children: Snippet; class?: ClassValue; wrapperClass?: ClassValue } = $props();
 
 	const sidebar = useSidebar();
+
+	const mounted = new IsMounted();
 </script>
 
 <ScrollArea
-	class="print:*:oveflow-hidden @container flex h-0 grow *:scroll-smooth print:h-auto print:*:h-auto"
+	class={[
+		'print:*:oveflow-hidden @container flex h-0 grow print:h-auto print:*:h-auto',
+		mounted.current && '*:scroll-smooth'
+	]}
 >
 	<div class={cn('flex grow flex-row', wrapperClass)}>
 		<div class={cn('mx-auto max-w-full', kelas)}>

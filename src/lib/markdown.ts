@@ -1,193 +1,221 @@
-import { lazy, lazy_array } from '$lib/lazy';
-import type { MarkdownDocument, MarkdownNode, MarkdownNodeMap } from '$lib/server/markdown';
-
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
-	? I
-	: never;
-
-type LastInUnion<U> =
-	UnionToIntersection<U extends any ? (x: U) => 0 : never> extends (x: infer L) => 0 ? L : never;
-
-type UnionToTuple<U, Last = LastInUnion<U>> = [U] extends [never]
-	? []
-	: [...UnionToTuple<Exclude<U, Last>>, Last];
-
-type SameLength<T extends any[]> = T[number][] & { length: T['length'] };
-
-type NotEmpty<T extends any[]> = T extends [] ? never : T;
-
-type FilterNever<T> = {
-	[K in keyof T as T[K] extends never ? never : K]: T[K];
-};
-
-type Shape = FilterNever<
-	Prettify<{
-		[K in keyof MarkdownNodeMap]: NotEmpty<
-			SameLength<UnionToTuple<keyof Omit<MarkdownNodeMap[K], 'type' | 'children'>>>
-		>;
-	}>
->;
+import { collectText, type MD, NodeWalker } from '@eslym/markdown';
+import { slug } from 'github-slugger';
+import { parse } from 'yaml';
+import * as z from '$lib/zod';
 
 export interface TOCEntry {
-	text: string;
-	id?: string;
+	id: string;
+	title: string;
 	children?: TOCEntry[];
 }
 
-const types = [
-	'text',
-	'code',
-	'html',
-	'codespan',
-	'image',
-	'heading',
-	'paragraph',
-	'blockquote',
-	'list',
-	'listItem',
-	'hr',
-	'table',
-	'thead',
-	'tbody',
-	'tr',
-	'th',
-	'td',
-	'strong',
-	'emphasis',
-	'link',
-	'strikethrough',
-	'comment'
-] satisfies SameLength<UnionToTuple<keyof MarkdownNodeMap>>;
+const _schema = z.object({
+	title: z.optional(z.loose(z.string())),
+	description: z.optional(z.loose(z.string())),
+	toc: z.optional(
+		z.loose(
+			z.union([
+				z.boolean(),
+				z.object({
+					startDepth: z.number().check(z.int(), z.minimum(1), z.maximum(6))
+				})
+			])
+		)
+	)
+});
 
-const shapes = {
-	heading: ['level', 'id'],
-	list: ['ordered', 'start', 'depth'],
-	listItem: ['ordered', 'start', 'depth', 'index', 'checked'],
-	th: ['align'],
-	td: ['align'],
-	link: ['href', 'title'],
-	text: ['value'],
-	codespan: ['value'],
-	code: ['value', 'lang'],
-	image: ['src', 'alt', 'title'],
-	html: ['tag', 'attrs'],
-	comment: ['value']
-} satisfies Shape;
+const markdown_meta_schema = z.loose(_schema, {} as z.infer<typeof _schema>);
 
-const transformers: Record<
-	string,
-	{
-		encode: (value: any) => any;
-		decode: (value: any) => any;
+export class Slugger {
+	#occurrences: Record<string, number> = {};
+
+	slug(value: string) {
+		const base = slug(value);
+		const count = this.touch(base);
+		const id = count === 1 ? base : `${base}-${count}`;
+		this.touch(id);
+		return id;
 	}
-> = {
-	align: {
-		encode(align: 'left' | 'right' | 'center' | undefined): 'l' | 'r' | 'c' | undefined {
-			return align?.[0] as any;
-		},
-		decode(align: 'l' | 'r' | 'c' | undefined): 'left' | 'right' | 'center' | undefined {
-			if (!align) return undefined;
-			return {
-				l: 'left',
-				r: 'right',
-				c: 'center'
-			}[align] as any;
+
+	touch(value: string) {
+		let n = (this.#occurrences[value] ?? 0) + 1;
+		while (this.#occurrences[`${value}-${n}`]) {
+			n++;
 		}
+		return (this.#occurrences[value] = n);
 	}
-};
+}
 
-function compress_node(node: MarkdownNode): any[] {
-	const c: any[] = [
-		types.indexOf(node.type),
-		'children' in node ? node.children.map((child) => compress_node(child)) : undefined
-	];
-	const shape = shapes[node.type as keyof Shape];
-	if (shape) {
-		for (const key of shape) {
-			if (transformers[key]) {
-				c.push(transformers[key].encode((node as any)[key] ?? undefined));
+export function transform_nodes(doc: MD.Document): Omit<MD.Document, 'meta'> & {
+	toc?: TOCEntry[];
+	meta: z.infer<typeof markdown_meta_schema>;
+	languages: Set<string>;
+} {
+	const slugger = new Slugger();
+	const walker = new NodeWalker();
+	const meta = markdown_meta_schema.parse(parse(doc.meta ?? ''));
+	const languages = new Set<string>();
+
+	const toc = meta.toc ?? true;
+	const toc_start = toc === true ? 2 : toc ? toc?.startDepth : undefined;
+	const tocs = [{ children: [], id: 'root', title: '' }] as TOCEntry[];
+	const to_remove = new Set<MD.Nodes | MD.Document>();
+
+	for (const footnote of Object.values(doc.footnotes ?? {})) {
+		footnote.domId = slugger.slug(`note ${footnote.identifier}`);
+		footnote.linkId = slugger.slug(`note ref ${footnote.identifier}`);
+		insert_back_ref(footnote);
+	}
+
+	walker.on('enter', (node, ctx) => {
+		if (to_remove.has(node)) {
+			to_remove.delete(node);
+			return ctx.remove();
+		}
+	});
+	walker.on('exit', (node, ctx) => {
+		if (to_remove.has(node)) {
+			to_remove.delete(node);
+			return ctx.remove();
+		}
+	});
+	walker.on('enter', 'heading', (node) => {
+		if (typeof meta.title === 'undefined' && node.depth === 1) {
+			meta.title = strip_whitespace(collectText(node));
+		}
+		node.id = determine_id(node, slugger);
+		if (toc_start && node.depth >= toc_start) {
+			const depth = node.depth - toc_start + 1;
+			const entry: TOCEntry = { id: node.id, title: strip_whitespace(collectText(node)) };
+			const parent = tocs[depth - 1];
+			if (parent) {
+				(parent.children ??= []).push(entry);
+				tocs[depth] = entry;
+			}
+		}
+	});
+	walker.on('enter', 'textDirective', (node, ctx) => {
+		if (node.name === 'setId') {
+			if (node.children.length) {
+				return ctx.replaceWith(node.children);
 			} else {
-				c.push((node as any)[key] ?? undefined);
+				return ctx.remove();
 			}
 		}
-	}
-	return c;
-}
-
-const src_symbol = Symbol('src');
-
-function arr_proxy(arr: any[]): any {
-	const proxy = lazy_array(arr.map(() => (i) => node_proxy(arr[i]))) as any;
-	return proxy;
-}
-
-function node_proxy(node: any[]): any {
-	const accessors = [
-		[src_symbol, () => node],
-		['type', () => types[node[0]]],
-		['children', () => (node[1] ? arr_proxy(node[1]) : undefined)]
-	];
-	const shape = shapes[types[node[0]] as keyof Shape];
-	if (shape) {
-		for (let i = 0; i < shape.length; i++) {
-			const index = 2 + i;
-			accessors.push([
-				shape[i],
-				transformers[shape[i]]
-					? () => transformers[shape[i]].decode(node[index])
-					: () => node[index]
-			]);
+	});
+	walker.on('enter', 'element', (node) => {
+		if (node.properties?.id) {
+			// Touch the ID to ensure it won't be used for auto-generated headings
+			slugger.touch(node.properties.id);
 		}
-	}
-	return lazy(Object.fromEntries(accessors) as any);
-}
-
-export function compress_mdast(doc: MarkdownDocument): any[] {
-	return doc.map((node) => compress_node(node));
-}
-
-export function decompress_mdast(data: any[]): MarkdownDocument {
-	return arr_proxy(data);
-}
-
-export function collect_text(node: MarkdownNode[]): string {
-	return node
-		.map((child) => {
-			if (child.type === 'text' || child.type === 'codespan') {
-				return child.value;
+	});
+	walker.on('enter', 'containerDirective', (node, ctx) => {
+		if (node.name === 'description') {
+			if (typeof meta.description === 'undefined') {
+				meta.description = strip_whitespace(collectText(node));
 			}
-			if (child.type === 'image') {
-				return child.alt;
+			if (node.children.length) {
+				return ctx.replaceWith(node.children);
 			}
-			if (child.type === 'comment') {
-				return '';
-			}
-			if (child.type === 'html') {
-				if (child.tag === 'img') {
-					const alt = child.attrs.find(([name]) => name === 'alt')?.[1];
-					if (alt) {
-						return alt;
-					}
+			return ctx.remove();
+		}
+	});
+	walker.on('enter', 'footnoteReference', (node, ctx) => {
+		const def = doc.footnotes?.[node.identifier];
+		if (!def) {
+			return ctx.remove();
+		}
+		node.domId = def.linkId;
+		node.linkId = def.domId;
+	});
+	walker.on('enter', 'paragraph', (node, ctx) => {
+		if (!is_image_only(node)) return;
+		if (ctx.nextSibling?.type !== 'blockquote') return;
+		const figure: MD.Element = {
+			type: 'element',
+			tagName: 'figure',
+			properties: {},
+			pos: node.pos && ctx.nextSibling.pos ? [node.pos[0], ctx.nextSibling.pos[1]] : undefined,
+			children: [
+				node.children[0],
+				{
+					type: 'element',
+					tagName: 'figcaption',
+					properties: {},
+					children: ctx.nextSibling.children,
+					pos: ctx.nextSibling.pos
 				}
+			]
+		};
+		to_remove.add(ctx.nextSibling);
+		return ctx.replaceWith(figure);
+	});
+	walker.on('enter', 'code', (node) => {
+		languages.add(node.lang ?? 'text');
+	});
+	walker.on('exit', 'text', (node, ctx) => {
+		if (ctx.previousSibling?.type === 'text') {
+			ctx.previousSibling.value += node.value;
+			if (ctx.previousSibling.pos && node.pos) {
+				ctx.previousSibling.pos[1] = node.pos[1];
 			}
-			if ('children' in child && child.children?.length) {
-				return collect_text(child.children!);
-			}
-			return '';
-		})
-		.join('');
+			return ctx.remove();
+		}
+	});
+	walker.execute(doc);
+	return {
+		...doc,
+		toc: toc_start !== undefined ? tocs[0].children : undefined,
+		meta,
+		languages
+	};
 }
 
-export function walk_mdast(
-	nodes: MarkdownNode[],
-	enter: (node: MarkdownNode) => void,
-	out?: (node: MarkdownNode) => void
-) {
-	for (const node of nodes) {
-		enter(node);
-		if ('children' in node && node.children?.length) {
-			walk_mdast(node.children, enter, out);
+function is_image_only(node: MD.Paragraph) {
+	return (
+		node.children.length === 1 &&
+		(only_child(node, 'image', 'imageReference') ||
+			(only_child(node, 'link', 'linkReference') &&
+				only_child(node.children[0], 'image', 'imageReference')))
+	);
+}
+
+function only_child(node: MD.Nodes, ...types: (keyof MD.NodeMap)[]) {
+	return 'children' in node && node.children.length === 1 && types.includes(node.children[0].type);
+}
+
+function determine_id(node: MD.Heading, slugger: Slugger) {
+	for (const child of node.children) {
+		if (child.type === 'textDirective' && child.name === 'setId' && child.attributes?.['id']) {
+			slugger.touch(child.attributes['id']);
+			return child.attributes['id'];
 		}
-		out?.(node);
+	}
+	const text = collectText(node);
+	return slugger.slug(text);
+}
+
+function strip_whitespace(value: string) {
+	return value.trim().replace(/\s+/g, ' ');
+}
+
+function insert_back_ref(def: MD.FootnoteDefinition) {
+	if (!def.linkId) {
+		return;
+	}
+	const back_ref: MD.FootnoteBackRef = {
+		type: 'footnoteBackRef',
+		id: def.linkId
+	};
+	const walker = new NodeWalker();
+	let last_paragraph: MD.Paragraph = null!;
+	walker.on('enter', 'paragraph', (node) => {
+		last_paragraph = node;
+	});
+	walker.execute(def);
+	if (last_paragraph) {
+		last_paragraph.children.push(back_ref);
+	} else {
+		def.children.push(back_ref);
 	}
 }

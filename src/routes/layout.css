@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
 
-@source inline('{dark:,}{hidden,block,inline-block,flex,inline-flex}');
+@source inline('{dark:,print:,}{hidden,block,inline-block,flex,inline-flex}');
 
 @custom-variant dark {
 	@media not print {
@@ -80,7 +80,7 @@
 	--tw-prose-th-borders: var(--border);
 	--tw-prose-td-borders: var(--border);
 
-	:where(h1, h2, h3, h4, h5, h6):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+	:where([id]):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
 		scroll-margin-top: 1em;
 	}
 
@@ -144,5 +144,8 @@
 	}
 	html {
 		@apply font-sans;
+	}
+	.katex-html[aria-hidden='true'] {
+		display: none;
 	}
 }

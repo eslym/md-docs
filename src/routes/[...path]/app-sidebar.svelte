@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { env } from '$env/dynamic/public';
 
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as Collapsible from '$lib/components/ui/collapsible';
@@ -10,11 +9,11 @@
 
 	let {
 		ref = $bindable(null),
-		favicon,
+		app,
 		...restProps
-	}: ComponentProps<typeof Sidebar.Root> & { favicon: string } = $props();
+	}: ComponentProps<typeof Sidebar.Root> & { app: App.Locals['app'] } = $props();
 
-	let toc: TOCEntry[] = $derived(page.data.doc?.toc || []);
+	let toc: TOCEntry[] | undefined = $derived(page.data.doc?.toc);
 </script>
 
 <Sidebar.Root {...restProps} bind:ref>
@@ -24,12 +23,12 @@
 				<Sidebar.MenuButton size="lg">
 					{#snippet child({ props })}
 						<a href="/" {...props}>
-							<img src={favicon} alt="favicon" class="size-8 object-contain" />
+							<img src={app.favicon} alt="favicon" class="size-8 object-contain" />
 							<div class="flex flex-col gap-0.5 leading-none">
-								<span class="font-medium">{env.PUBLIC_APP_NAME || 'MD Docs'}</span>
-								{#if env.PUBLIC_APP_SUBTITLE}
+								<span class="font-medium">{app.name || 'md-docs'}</span>
+								{#if app.subtitle}
 									<span class="text-muted-foreground">
-										{env.PUBLIC_APP_SUBTITLE}
+										{app.subtitle}
 									</span>
 								{/if}
 							</div>
@@ -40,39 +39,21 @@
 		</Sidebar.Menu>
 	</Sidebar.Header>
 	<Sidebar.Content class="pb-8">
-		{#each toc as entry}
-			{@render sidebar_group(entry)}
-		{/each}
+		{#if toc?.length}
+			<Sidebar.Group>
+				<Sidebar.GroupLabel>Contents</Sidebar.GroupLabel>
+				<Sidebar.GroupContent>
+					<Sidebar.Menu>
+						{#each toc as child}
+							{@render menu_item(child)}
+						{/each}
+					</Sidebar.Menu>
+				</Sidebar.GroupContent>
+			</Sidebar.Group>
+		{/if}
 	</Sidebar.Content>
 	<Sidebar.Rail />
 </Sidebar.Root>
-
-{#snippet sidebar_group(entry: TOCEntry)}
-	<Sidebar.Group>
-		<Sidebar.GroupLabel class="h-auto py-2">
-			{#snippet child({ props })}
-				{#if entry.id}
-					<a href={`#${entry.id}`} {...props}>
-						{entry.text}
-					</a>
-				{:else}
-					<div {...props}>
-						{entry.text}
-					</div>
-				{/if}
-			{/snippet}
-		</Sidebar.GroupLabel>
-		{#if entry.children?.length}
-			<Sidebar.GroupContent>
-				<Sidebar.Menu>
-					{#each entry.children as child}
-						{@render menu_item(child)}
-					{/each}
-				</Sidebar.Menu>
-			</Sidebar.GroupContent>
-		{/if}
-	</Sidebar.Group>
-{/snippet}
 
 {#snippet menu_item(entry: TOCEntry)}
 	{#snippet menu_button({ props }: { props: Record<string, unknown> })}
@@ -82,7 +63,7 @@
 			href: entry.id ? `#${entry.id}` : undefined
 		}}
 		<svelte:element this={el} {...attrs}>
-			{entry.text}
+			{entry.title}
 			{#if entry.children?.length}
 				<PlusIcon class="ms-auto group-data-[state=open]/collapsible:hidden" />
 				<MinusIcon class="ms-auto group-data-[state=closed]/collapsible:hidden" />
@@ -136,7 +117,7 @@
 			href: entry.id ? `#${entry.id}` : undefined
 		}}
 		<svelte:element this={el} {...attrs}>
-			{entry.text}
+			{entry.title}
 		</svelte:element>
 	{/snippet}
 	<Sidebar.MenuSubItem>

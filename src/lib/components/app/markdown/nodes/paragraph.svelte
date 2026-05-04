@@ -1,14 +1,8 @@
 <script lang="ts">
-	import type { MarkdownNodeMap } from '$lib/server/markdown';
-	import Node from '../node.svelte';
+	import { render_children } from '../node.svelte';
+	import type { MD } from '@eslym/markdown';
 
-	let {
-		node
-	}: {
-		node: MarkdownNodeMap['paragraph'];
-	} = $props();
+	let { node }: { node: MD.Paragraph } = $props();
 </script>
 
-<p>
-	{#each node.children as child}<Node node={child} />{/each}
-</p>
+<p>{@render render_children(node.children)}</p>
