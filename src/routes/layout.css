@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
 
-@source inline('{dark:,}{hidden,block,inline-block,flex,inline-flex}');
+@source inline('{dark:,print:,}{hidden,block,inline-block,flex,inline-flex}');
 
 @custom-variant dark {
 	@media not print {
