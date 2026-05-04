@@ -1,13 +1,17 @@
 <script lang="ts">
+	import { directives } from '$lib/components/app/markdown/directives';
 	import { render_children } from '../node.svelte';
 	import type { MD } from '@eslym/markdown';
 
 	let { node }: { node: MD.LeafDirective } = $props();
 
-	// make unknown directive render like it does not exists,
-	// ignoring all attributes and just render the children.
+	let Component = $derived(directives.leaf[node.name]);
 </script>
 
-<p data-directive={node.name}>
-	{@render render_children(node.children)}
-</p>
+{#if Component}
+	<Component {node} />
+{:else}
+	<p data-directive={node.name}>
+		{@render render_children(node.children)}
+	</p>
+{/if}

@@ -59,6 +59,7 @@ export function transform_nodes(doc: MD.Document): Omit<MD.Document, 'meta'> & {
 	const toc = meta.toc ?? true;
 	const toc_start = toc === true ? 2 : toc ? toc?.startDepth : undefined;
 	const tocs = [{ children: [], id: 'root', title: '' }] as TOCEntry[];
+	const to_remove = new Set<MD.Nodes | MD.Document>();
 
 	for (const footnote of Object.values(doc.footnotes ?? {})) {
 		footnote.domId = slugger.slug(`note ${footnote.identifier}`);
@@ -66,6 +67,18 @@ export function transform_nodes(doc: MD.Document): Omit<MD.Document, 'meta'> & {
 		insert_back_ref(footnote);
 	}
 
+	walker.on('enter', (node, ctx) => {
+		if (to_remove.has(node)) {
+			to_remove.delete(node);
+			return ctx.remove();
+		}
+	});
+	walker.on('exit', (node, ctx) => {
+		if (to_remove.has(node)) {
+			to_remove.delete(node);
+			return ctx.remove();
+		}
+	});
 	walker.on('enter', 'heading', (node) => {
 		if (typeof meta.title === 'undefined' && node.depth === 1) {
 			meta.title = strip_whitespace(collectText(node));
@@ -115,6 +128,28 @@ export function transform_nodes(doc: MD.Document): Omit<MD.Document, 'meta'> & {
 		node.domId = def.linkId;
 		node.linkId = def.domId;
 	});
+	walker.on('enter', 'paragraph', (node, ctx) => {
+		if (!is_image_only(node)) return;
+		if (ctx.nextSibling?.type !== 'blockquote') return;
+		const figure: MD.Element = {
+			type: 'element',
+			tagName: 'figure',
+			properties: {},
+			pos: node.pos && ctx.nextSibling.pos ? [node.pos[0], ctx.nextSibling.pos[1]] : undefined,
+			children: [
+				node.children[0],
+				{
+					type: 'element',
+					tagName: 'figcaption',
+					properties: {},
+					children: ctx.nextSibling.children,
+					pos: ctx.nextSibling.pos
+				}
+			]
+		};
+		to_remove.add(ctx.nextSibling);
+		return ctx.replaceWith(figure);
+	});
 	walker.on('enter', 'code', (node) => {
 		languages.add(node.lang ?? 'text');
 	});
@@ -134,6 +169,19 @@ export function transform_nodes(doc: MD.Document): Omit<MD.Document, 'meta'> & {
 		meta,
 		languages
 	};
+}
+
+function is_image_only(node: MD.Paragraph) {
+	return (
+		node.children.length === 1 &&
+		(only_child(node, 'image', 'imageReference') ||
+			(only_child(node, 'link', 'linkReference') &&
+				only_child(node.children[0], 'image', 'imageReference')))
+	);
+}
+
+function only_child(node: MD.Nodes, ...types: (keyof MD.NodeMap)[]) {
+	return 'children' in node && node.children.length === 1 && types.includes(node.children[0].type);
 }
 
 function determine_id(node: MD.Heading, slugger: Slugger) {

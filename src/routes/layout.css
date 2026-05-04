@@ -145,4 +145,7 @@
 	html {
 		@apply font-sans;
 	}
+	.katex-html[aria-hidden='true'] {
+		display: none;
+	}
 }

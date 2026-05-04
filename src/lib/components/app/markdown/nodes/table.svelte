@@ -10,7 +10,7 @@
 	let tbody = $derived(node.children.slice(1));
 </script>
 
-<div class="w-full overflow-x-auto">
+<div class="w-full overflow-x-auto overflow-y-clip">
 	<table>
 		<thead>
 			<TableContext.Provider {node} thead>
