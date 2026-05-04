@@ -2,8 +2,6 @@ import { env as private_env } from '$env/dynamic/private';
 import { env } from '$env/dynamic/public';
 import * as z from '$lib/zod';
 
-export { env };
-
 export const meta_in_md = /^\-{3,}\n([\s\S]+?)\n-{3,}\n/;
 
 const cache_control_maxage = z

@@ -12,6 +12,7 @@ import { docs_path } from '$lib/server/dir';
 import sharp from 'sharp';
 import { hash_file } from '$lib/server/hash';
 import * as Handlebars from 'handlebars';
+import { env } from '$env/dynamic/public';
 
 export const trailingSlash = 'ignore';
 
@@ -54,11 +55,23 @@ export async function GET({ url, params, request, locals }) {
 		let file = Bun.file(absolute);
 		let type = file.type;
 		if (hbs.test(absolute)) {
-			const prefix = Bun.hash.xxHash32(JSON.stringify(version + JSON.stringify(locals)));
+			const prefix = Bun.hash.xxHash32(
+				JSON.stringify(
+					version +
+						JSON.stringify({
+							...locals,
+							env
+						})
+				)
+			);
 			file = await cached_file(
 				`hbs:${prefix}:${resolved_path}`,
 				(cached) => cached.lastModified < file.lastModified,
-				async () => Handlebars.compile(await file.text())(locals)
+				async () =>
+					Handlebars.compile(await file.text())({
+						...locals,
+						env
+					})
 			);
 			type = Bun.file(resolved_path).type;
 		} else if (url.searchParams.has('w') || url.searchParams.has('f')) {
