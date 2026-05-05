@@ -12,7 +12,7 @@ const xxhash32 = import.meta.env.SSR
 	: async (str: string) =>
 			await import('xxh32').then((mod) => mod.xxh32(str).toString(16).padStart(8, '0'));
 
-export async function load({ params, fetch, setHeaders }) {
+export async function load({ parent, params, fetch, setHeaders }) {
 	const resource_path = '/docs/' + params.path;
 	const res = await fetch(resource_path);
 	if (res.status === 400 || res.status === 404) {
@@ -29,17 +29,37 @@ export async function load({ params, fetch, setHeaders }) {
 		mermaid: doc.languages.has('mermaid') ? mermaid() : undefined,
 		shiki: doc.languages.size > 0 ? shiki(...doc.languages) : undefined
 	});
-	const headers: Record<string, string> = {};
-	if (res.headers.has('cache-control')) {
-		headers['Cache-Control'] = res.headers.get('cache-control') || '';
+	const layout = await parent();
+	if (import.meta.env.PROD) {
+		const headers: Record<string, string> = {};
+		if (res.headers.has('cache-control')) {
+			headers['Cache-Control'] = res.headers.get('cache-control') || '';
+		}
+		if (res.headers.has('etag')) {
+			headers['Etag'] = JSON.stringify(
+				await xxhash32(version + JSON.stringify(layout) + (res.headers.get('etag') || ''))
+			);
+		}
+		setHeaders(headers);
 	}
-	if (res.headers.has('etag')) {
-		headers['Etag'] = JSON.stringify(await xxhash32(version + (res.headers.get('etag') || '')));
-	}
-	setHeaders(headers);
 	return {
+		...layout,
+		menu: merge_menu(doc.meta.menu, layout.menu),
 		loc: doc_location,
 		doc,
 		tools
 	};
+}
+
+function merge_menu(...menus: (App.MenuGroup | App.MenuGroup[] | undefined)[]): App.MenuGroup[] {
+	const groups: App.MenuGroup[] = [];
+	for (const menu of menus) {
+		if (!menu) continue;
+		if (Array.isArray(menu)) {
+			groups.push(...menu);
+		} else {
+			groups.push(menu);
+		}
+	}
+	return groups;
 }

@@ -2,6 +2,7 @@ import { collectText, type MD, NodeWalker } from '@eslym/markdown';
 import { slug } from 'github-slugger';
 import { parse } from 'yaml';
 import * as z from '$lib/zod';
+import { menu_groups } from '$lib/menu';
 
 export interface TOCEntry {
 	id: string;
@@ -21,7 +22,8 @@ const _schema = z.object({
 				})
 			])
 		)
-	)
+	),
+	menu: z.loose(menu_groups)
 });
 
 const markdown_meta_schema = z.loose(_schema, {} as z.infer<typeof _schema>);

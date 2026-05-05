@@ -16,9 +16,34 @@ declare global {
 			};
 			[key: string]: unknown;
 		}
-		// interface PageData {}
+		interface PageData {
+			locals?: App.Locals;
+			menu?: MenuGroup[] | MenuGroup;
+		}
 		// interface PageState {}
 		// interface Platform {}
+
+		type MenuSubEntry = {
+			title: string;
+			target?: '_blank' | '_self' | '_parent' | '_top';
+			href: string;
+		};
+
+		type MenuEntry =
+			| {
+					title: string;
+					target?: '_blank' | '_self' | '_parent' | '_top';
+					href: string;
+			  }
+			| {
+					title: string;
+					items: MenuSubEntry[] | MenuSubEntry;
+			  };
+
+		interface MenuGroup {
+			title: string;
+			items: MenuEntry[] | MenuEntry;
+		}
 	}
 
 	type Nullable<T> = T | null | undefined;

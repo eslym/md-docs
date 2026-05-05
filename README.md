@@ -2,13 +2,14 @@
 
 MD Docs is a Bun-first SvelteKit app that serves a documentation folder and renders Markdown as a full docs website.
 
-It includes a typed Markdown pipeline, TOC/sidebar navigation, syntax highlighting, Mermaid, KaTeX, responsive image optimization, and runtime templating for dynamic docs content.
+It includes a typed Markdown pipeline, TOC/sidebar navigation, configurable sidebar menus, syntax highlighting, Mermaid, KaTeX, responsive image optimization, and runtime templating for dynamic docs content.
 
 ## Highlights
 
 - Bun runtime with `@eslym/sveltekit-adapter-bun`.
 - File-backed docs server at `/docs/*` with deterministic path resolution.
 - Markdown reader UI at `/<path>` with generated heading IDs and table of contents.
+- Configurable app menu via docs root `.menu.json`/`.menu.yml` and per-page `menu` frontmatter.
 - Mermaid diagrams, Shiki syntax highlighting, and KaTeX math rendering.
 - On-demand image transforms (`?w=<width>&f=<format>`) and automatic `<picture>`/`srcset` generation.
 - Runtime customization via `docs/.setup` and per-file headers via `.<filename>.headers.json`.
@@ -85,6 +86,7 @@ MD Docs transforms parsed markdown before rendering:
 - Auto description from `:::description ...` directive when `description` is missing.
 - Stable heading IDs (GitHub-like slugs), with `:setId{id=custom-id}` or `:setId{#custom-id}` override support.
 - Optional table of contents from headings (`toc: true` or `toc.startDepth`).
+- Optional per-page sidebar menu via frontmatter `menu` (merged with global menu config when present).
 - Footnote links/back-links wiring.
 - Figure shorthand: paragraph containing only an image followed by a blockquote becomes `<figure><img/><figcaption/></figure>`.
 
@@ -97,11 +99,26 @@ Supported frontmatter keys:
 title: Integration Guide
 description: API integration steps
 toc: true
+# optional page-specific menu section
+# menu:
+#   title: Quick Links
+#   items:
+#     - title: API Reference
+#       href: /api
+#     - title: Community
+#       href: https://example.com/community
 # or:
 # toc:
 #   startDepth: 2
 ---
 ```
+
+`menu` supports either a single group or a list of groups. Each group has:
+
+- `title`
+- `items` (single item or list)
+  - link item: `title`, `href`, optional `target` (`_self`, `_blank`, `_parent`, `_top`)
+  - nested item: `title`, `items` (single sub-item or list)
 
 ## Directives
 
@@ -177,6 +194,27 @@ Example sidecar:
 	"Cache-Control": "public, max-age=300"
 }
 ```
+
+## Sidebar menu configuration
+
+You can define a global menu for the docs reader sidebar using one of these files in the docs root:
+
+- `docs/.menu.json`
+- `docs/.menu.yml`
+- `docs/.menu.yaml`
+
+File content uses the same schema as frontmatter `menu` (single group or array of groups).
+
+Merge behavior:
+
+- If both frontmatter `menu` and root `.menu.*` are present, both are rendered.
+- Per-page frontmatter `menu` groups are rendered first, then global `.menu.*` groups.
+
+Link behavior:
+
+- Internal URLs default to `target="_self"`.
+- External URLs default to `target="_blank"`.
+- You can override with explicit `target` on any menu link item.
 
 ## Handlebars templating (`.hbs`)
 

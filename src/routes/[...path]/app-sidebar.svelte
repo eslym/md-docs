@@ -6,6 +6,7 @@
 	import type { TOCEntry } from '$lib/markdown';
 	import type { ComponentProps } from 'svelte';
 	import { MinusIcon, PlusIcon } from '@lucide/svelte';
+	import AppMenu from './app-menu.svelte';
 
 	let {
 		ref = $bindable(null),
@@ -51,6 +52,7 @@
 				</Sidebar.GroupContent>
 			</Sidebar.Group>
 		{/if}
+		<AppMenu />
 	</Sidebar.Content>
 	<Sidebar.Rail />
 </Sidebar.Root>
@@ -73,26 +75,24 @@
 	<Collapsible.Root open={false} class="group/collapsible">
 		{#snippet child({ props })}
 			<Sidebar.MenuItem {...props}>
-				<div class="flex flex-row gap-0.5">
-					{#if entry.children?.length}
-						<Collapsible.Trigger>
-							{#snippet child({ props })}
-								<Sidebar.MenuButton
-									{...props}
-									isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
-									class="h-auto py-1.5"
-									child={menu_button}
-								/>
-							{/snippet}
-						</Collapsible.Trigger>
-					{:else}
-						<Sidebar.MenuButton
-							class="h-auto py-1.5"
-							child={menu_button}
-							isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
-						/>
-					{/if}
-				</div>
+				{#if entry.children?.length}
+					<Collapsible.Trigger>
+						{#snippet child({ props })}
+							<Sidebar.MenuButton
+								{...props}
+								isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
+								class="h-auto py-1.5"
+								child={menu_button}
+							/>
+						{/snippet}
+					</Collapsible.Trigger>
+				{:else}
+					<Sidebar.MenuButton
+						class="h-auto py-1.5"
+						child={menu_button}
+						isActive={Boolean(entry.id && page.url.hash === `#${entry.id}`)}
+					/>
+				{/if}
 				{#if entry.children?.length}
 					<Collapsible.Content>
 						{#snippet child({ props })}
