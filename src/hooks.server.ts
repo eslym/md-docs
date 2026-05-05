@@ -105,7 +105,7 @@ export async function init() {
 	load_locals = wrap_setup(await find_setup());
 }
 
-const keep_headers = new Set<string>(['content-type', 'content-location']);
+const keep_headers = new Set<string>(['content-type', 'content-location', 'cache-control', 'etag']);
 
 export async function handle({ event, resolve }) {
 	event.locals = await load_locals(event.url);

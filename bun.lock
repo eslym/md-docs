@@ -48,6 +48,7 @@
         "typescript": "^5.9.3",
         "vite": "^7.3.2",
         "vite-plugin-devtools-json": "^1.0.0",
+        "xxh32": "^2.0.5",
         "yaml": "^2.8.3",
         "zod": "^4.4.2",
       },
@@ -903,6 +904,8 @@
     "wrap-ansi": ["wrap-ansi@8.1.0", "", { "dependencies": { "ansi-styles": "^6.1.0", "string-width": "^5.0.1", "strip-ansi": "^7.0.1" } }, "sha512-si7QWI6zUMq56bESFvagtmzMdGOtoxfR+Sez11Mobfc7tm+VkUckk9bW2UeffTGVUbOksxmSw0AA2gs8g71NCQ=="],
 
     "wrap-ansi-cjs": ["wrap-ansi@7.0.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q=="],
+
+    "xxh32": ["xxh32@2.0.5", "", {}, "sha512-glQIaPvLHV4xG2Sn0E4mZWY25JT34+XcG4e2c8OMIH2SXxVrm6MmJ8miCsqGBLtf+rn2YcaeS11vq/66vkXGUQ=="],
 
     "yaml": ["yaml@2.8.3", "", { "bin": { "yaml": "bin.mjs" } }, "sha512-AvbaCLOO2Otw/lW5bmh9d/WEdcDFdQp2Z2ZUH3pX9U2ihyUY0nvLv7J6TrWowklRGPYbB/IuIMfYgxaCPg5Bpg=="],
 

@@ -134,6 +134,11 @@
 			color-scheme: dark;
 		}
 	}
+	@media print {
+		:root {
+			--background: white;
+		}
+	}
 	* {
 		@apply border-border outline-ring/50;
 		scrollbar-width: thin;
