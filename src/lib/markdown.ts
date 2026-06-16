@@ -26,7 +26,7 @@ const _schema = z.object({
 	menu: z.loose(menu_groups)
 });
 
-const markdown_meta_schema = z.loose(_schema, {} as z.infer<typeof _schema>);
+const markdown_meta_schema = z.loose(_schema, () => ({}) as z.infer<typeof _schema>);
 
 export class Slugger {
 	#occurrences: Record<string, number> = {};
