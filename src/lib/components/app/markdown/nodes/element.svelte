@@ -18,7 +18,7 @@
 
 	let { node }: { node: MD.Element } = $props();
 
-	const attrs = $derived(() => normalize_props(node.properties ?? {}));
+	const attrs = $derived(normalize_props(node.properties ?? {}));
 </script>
 
 {#if selfClosingTags.has(node.tagName)}<svelte:element
