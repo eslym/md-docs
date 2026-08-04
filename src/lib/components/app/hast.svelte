@@ -5,7 +5,8 @@
 	let { node }: { node: Root | RootContent } = $props();
 </script>
 
-{#if node.type === 'element'}<svelte:element this={node.tagName} {...node.properties}
+<!-- prettier-ignore -->
+{#if node.type === 'element'}<svelte:element this={node.tagName} {...(node.properties as any)}
 		>{#each node.children as child}<Self node={child} />{/each}</svelte:element
 	>{:else if node.type === 'text'}{node.value}{:else if node.type === 'root'}{#each node.children as child}<Self
 			node={child}
