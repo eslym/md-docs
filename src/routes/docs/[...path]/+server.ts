@@ -39,6 +39,9 @@ const hbs = /\.hbs$/i;
 
 export async function GET({ url, params, request, locals }) {
 	const path = posix.join('/', params.path);
+	if (path.includes('\x00')) {
+		return http.badrequest;
+	}
 	if (path.includes('/.') || hbs.test(path)) {
 		return http.notfound;
 	}
