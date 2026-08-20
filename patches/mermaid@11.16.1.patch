@@ -1,0 +1,15 @@
+diff --git a/dist/mermaid.core.mjs b/dist/mermaid.core.mjs
+index 2ba23ae3dd75f924937eb7b1c07e948c757c247a..6e0d4cfb81a65bea53784c3d9c8fa975c3861f14 100644
+--- a/dist/mermaid.core.mjs
++++ b/dist/mermaid.core.mjs
+@@ -1369,7 +1369,9 @@ function initialize(userOptions = {}) {
+     options.themeVariables.fontFamily = options.fontFamily;
+   }
+   saveConfigFromInitialize(options);
+-  if (options?.theme && options.theme in themes_default) {
++  if (options?.themeClass) {
++    options.themeVariables = options.themeClass;
++  } else if (options?.theme && options.theme in themes_default) {
+     options.themeVariables = themes_default[options.theme].getThemeVariables(
+       options.themeVariables
+     );
